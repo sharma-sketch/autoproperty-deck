@@ -14,9 +14,42 @@
   function two(n){ return ('0' + n).slice(-2); }
   // print (and the PDF): the kit prints one slide per page; nothing to stage
   if(q.get('print')) return;
-  if(navigator.webdriver && !q.get('mode')) return;
-  // phones keep the kit's own view: every slide fitted to the width, never reflowed (an artifact pane of 600 px and up presents)
-  var mode = q.get('mode') || ((innerWidth >= 600 && innerHeight >= 340) ? 'present' : 'pages');
+  var asked = q.get('mode');
+  if(navigator.webdriver && !asked) return;
+  // which view: a phone held sideways presents, full screen; a phone held upright, or any window under 600 px wide,
+  // reads (art/phone.css reflows each slide into one column); anything larger presents. ?mode= present|read|pages
+  // forces one; ?mode=auto decides as a viewer's browser would (for checks).
+  var phone = matchMedia('(pointer: coarse)').matches && Math.min(screen.width, screen.height) < 600;
+  function want(){ return phone ? (innerWidth > innerHeight ? 'present' : 'read') : (innerWidth < 600 || innerHeight < 340 ? 'read' : 'present'); }
+  var mode = asked && asked !== 'auto' ? asked : want();
+  // turning the phone changes the view at the same slide
+  if(phone && (!asked || asked === 'auto')){
+    var turned = function(){
+      if(want() === mode) return;
+      var vs = [].slice.call(document.querySelectorAll('video')), fe = document.fullscreenElement || document.webkitFullscreenElement;
+      // the film in its own full screen turns by itself; the view changes once it is closed
+      if((fe && fe.tagName === 'VIDEO') || vs.some(function(v){ return v.webkitDisplayingFullscreen; })) return;
+      var id = doc.getAttribute('data-at'); if(id) try { history.replaceState(null, '', '#' + id); } catch(e){}
+      // the film keeps its place: where it was, and whether it was playing
+      var fv = document.querySelector('#film-step video');
+      if(fv && id === 'film-step' && fv.currentTime > 0) try { sessionStorage.setItem('ap-film', JSON.stringify({t: fv.currentTime, on: !fv.paused})); } catch(e){}
+      if(fe && document.exitFullscreen) try { document.exitFullscreen(); } catch(e){}
+      location.reload();
+    };
+    addEventListener('orientationchange', function(){ setTimeout(turned, 250); });
+    addEventListener('resize', function(){ clearTimeout(turned.t); turned.t = setTimeout(turned, 350); });
+    document.addEventListener('fullscreenchange', function(){ setTimeout(turned, 300); });
+    document.addEventListener('webkitendfullscreen', function(){ setTimeout(turned, 300); }, true);
+  }
+  var resume = null; try { resume = JSON.parse(sessionStorage.getItem('ap-film') || 'null'); sessionStorage.removeItem('ap-film'); } catch(e){}
+  function resumeFilm(v){
+    if(!resume || !v) return false;
+    var at = resume; resume = null;
+    var go = function(){ try { v.currentTime = at.t; if(at.on){ var pp = v.play(); if(pp && pp.catch) pp.catch(function(){}); } } catch(e){} };
+    if(v.readyState >= 1) go(); else v.addEventListener('loadedmetadata', go, {once: true});
+    return true;
+  }
+  if(mode === 'read'){ read(); return; }
   if(mode !== 'present') return;
 
   // ---------- present: the presenter owns the screen; the kit's fit and toolbar step aside
@@ -147,8 +180,9 @@
     f._total = total; f._counts = counts;
   });
 
+  if(phone) doc.classList.add('phone-land');
   function fit(){
-    var m = Math.round(Math.max(16, Math.min(innerWidth, innerHeight) * .035));
+    var m = phone ? 0 : Math.round(Math.max(16, Math.min(innerWidth, innerHeight) * .035));
     var s = Math.min((innerWidth - 2 * m) / 1920, (innerHeight - 2 * m) / 1080);
     var tx = Math.round((innerWidth - 1920 * s) / 2), ty = Math.round((innerHeight - 1080 * s) / 2);
     stage.style.transform = 'translate(' + tx + 'px,' + ty + 'px) scale(' + s + ')';
@@ -200,6 +234,7 @@
   var fstep = document.getElementById('film-step'), fv = fstep && fstep.querySelector('video');
   function film(f, old){
     if(!fv) return;
+    if(f === fstep && resumeFilm(fv)) return;
     if(f === fstep){ try { fv.currentTime = 0; var pp = fv.play(); if(pp && pp.catch) pp.catch(function(){ fv.muted = true; fv.play().catch(function(){}); }); } catch(e){} }
     else if(old === fstep){ try { fv.pause(); } catch(e){} }
   }
@@ -214,6 +249,7 @@
     if(prevBtn) prevBtn.disabled = cur === 0;
     if(nextBtn) nextBtn.disabled = cur === pages.length - 1;
     var id = s.id, h = cur === 0 ? '' : '#' + id;
+    doc.setAttribute('data-at', id);
     if(location.hash !== h) try { history.replaceState(null, '', h || location.pathname + location.search); } catch(e){}
   }
 
@@ -294,8 +330,18 @@
 
   // the controls step aside while you talk and come back when the mouse moves
   var idle = 0;
-  function wake(){ [ui, top].forEach(function(b){ if(b) b.classList.remove('idle'); }); clearTimeout(idle); idle = setTimeout(function(){ [ui, top].forEach(function(b){ if(b && !b.contains(document.activeElement)) b.classList.add('idle'); }); }, 3200); }
+  function wake(){ [ui, top].forEach(function(b){ if(b) b.classList.remove('idle'); }); clearTimeout(idle); idle = setTimeout(function(){ [ui, top].forEach(function(b){ if(b && !b.contains(document.activeElement)) b.classList.add('idle'); }); }, phone ? 2200 : 3200); }
   addEventListener('mousemove', wake); if(ui) ui.addEventListener('focusin', wake); if(top) top.addEventListener('focusin', wake);
+  // a phone held sideways: every touch brings the controls back for a moment; the first tap asks for the full screen
+  // where the browser allows it (Android; an iPhone keeps its browser bar, and the slide fills the rest)
+  if(phone){
+    addEventListener('touchstart', wake, {passive:true});
+    var asked4fs = false;
+    addEventListener('touchend', function(){
+      if(asked4fs || document.fullscreenElement || !doc.requestFullscreen || !document.fullscreenEnabled) return;
+      asked4fs = true; try { doc.requestFullscreen({navigationUI: 'hide'}).catch(function(){}); } catch(e){}
+    }, {passive:true});
+  }
 
   // ---------- all slides
   var built = false;
@@ -351,4 +397,52 @@
   function begin(){ if(begun) return; begun = true; show(start, true); wake(); }
   if(document.fonts && document.fonts.ready) document.fonts.ready.then(begin, begin);
   setTimeout(begin, 1200);
+  // ---------- read: a phone held upright. The slides one under another, each reflowed by art/phone.css into one column
+  // 720 design px wide and scaled to the screen; nothing builds; the film plays in its own player (full screen turns it
+  // sideways); the slide on screen goes into the link, so turning the phone presents from there.
+  function read(){
+    doc.classList.add('read');
+    // a reload (turning the phone reloads) starts at the slide in the link, not at the browser's remembered scroll
+    try { history.scrollRestoration = 'manual'; } catch(e){}
+    deck.dataset.fit = 'off'; deck.dataset.toolbar = 'off'; deck.classList.remove('is-deck');
+    var bar = document.querySelector('.apd-bar'); if(bar) bar.remove();
+    pages.forEach(function(p){ p.classList.remove('is-current'); });
+    function size(){ doc.style.setProperty('--rz', (doc.clientWidth / 720).toFixed(4)); }
+    addEventListener('resize', size); size();
+    var fv = document.querySelector('#film-step video');
+    if(fv){ fv.setAttribute('controls', ''); fv.setAttribute('preload', 'metadata'); fv.removeAttribute('autoplay'); if(location.hash === '#film-step') resumeFilm(fv); }
+    // appendix F reads one company a block: each cell says its column's name, in the page's language
+    var cp = document.querySelector('table.cp');
+    if(cp){
+      var en = doc.getAttribute('data-lang') === 'en';
+      var heads = [].map.call(cp.querySelectorAll('thead th'), function(th){ var l = th.querySelector(en ? 'l-en' : 'l-nb'); return (l || th).textContent.trim(); });
+      [].forEach.call(cp.querySelectorAll('tbody tr'), function(tr){
+        [].forEach.call(tr.children, function(td, i){
+          if(!i) return;
+          td.setAttribute('data-l', heads[i] || '');
+          var s = document.createElement('span'); while(td.firstChild) s.appendChild(td.firstChild); td.appendChild(s);
+        });
+      });
+    }
+    // start at the slide in the link (after a turn: the slide that was on screen), then keep the link at the slide in view
+    var target = location.hash ? document.getElementById(location.hash.slice(1)) : null;
+    if(target) doc.setAttribute('data-at', target.id);
+    var watch = function(){
+      if(!('IntersectionObserver' in window)) return;
+      var seen = new IntersectionObserver(function(es){
+        if(phone && want() !== mode) return;   // mid-turn the page rescales under the same scroll: keep the slide that was on screen
+        es.forEach(function(e){ if(e.isIntersecting){ doc.setAttribute('data-at', e.target.id);
+          try { history.replaceState(null, '', e.target === pages[0] ? location.pathname + location.search : '#' + e.target.id); } catch(err){} } });
+      }, {rootMargin: '-45% 0px -50% 0px'});
+      pages.forEach(function(p){ seen.observe(p); });
+    };
+    var begun = false;
+    var go = function(){
+      if(begun) return; begun = true;
+      if(target) target.scrollIntoView({block: 'start'});
+      requestAnimationFrame(function(){ requestAnimationFrame(watch); });
+    };
+    if(document.fonts && document.fonts.ready) document.fonts.ready.then(go, go);
+    setTimeout(go, 1200);
+  }
 })();

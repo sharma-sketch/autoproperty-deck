@@ -1,0 +1,310 @@
+/* Phones. Two views, chosen in art/present.js:
+
+   html.read        a phone held upright (or any window under 600 px wide). The slides one under another; each slide is
+                    reflowed into one column on a canvas 720 design px wide, scaled to the screen (--rz = width / 720),
+                    so 30 design px of body text reads at 16 px on a 390 px phone. Nothing builds; every slide is at
+                    rest. The film is its own player, full width, and its full-screen button turns it sideways.
+   html.phone-land  a phone held sideways. Present mode with the slide as large as the screen allows (no margin), the
+                    controls stepping aside after a moment, the film filling the slide.
+
+   Desktop is untouched: every rule here sits under one of those two classes. The PDF prints from the kit's own pages
+   (?print=1), so none of this reaches it either. */
+
+/* ---------- read: the canvas and its type */
+html.read, html.read body { overflow-x: hidden; }
+html.read body { margin: 0; background: #0f0e0d; }
+html.read .apd[data-format="slide"] {
+  --m: 40px; --gap: 36px;
+  --t-cover: 96px; --lh-cover: 100px; --t-title: 50px; --lh-title: 58px; --t-h: 36px; --lh-h: 44px;
+  --t-dek: 32px; --lh-dek: 44px; --t-body: 30px; --lh-body: 42px; --t-big: 120px;
+  --t-label: 27px; --lh-label: 37px; --t-cap: 23px; --lh-cap: 31px;
+  display: block; padding: 0; gap: 0; }
+html.read .apd > .apd-page {
+  width: 720px; height: auto; min-height: 0; zoom: var(--rz, .5417); margin: 0; box-shadow: none; overflow: hidden;
+  padding: 72px var(--m) 44px; gap: var(--gap); }
+html.read .apd-body, html.read .apd-fill { flex: none; }
+html.read .apd-title, html.read .s-head .apd-title { max-width: none; }
+html.read .s-head .apd-dek { max-width: none; }
+html.read .s-foot { margin-top: 8px; }
+html.read .s-foot .s-lockup { height: 20px; }
+
+/* the controls: only the PDF stays, floating; there is nothing to step through */
+html.read .ui .prev, html.read .ui .next, html.read .ui .sep, html.read .ui .count, html.read .prog, html.read .ov { display: none !important; }
+html.read .ui { right: max(14px, env(safe-area-inset-right, 0px)); bottom: calc(14px + env(safe-area-inset-bottom, 0px)); }
+
+/* the film step: a 16:9 player, full width, with its own controls (play, pause, full screen) */
+html.read #film-step { padding: 0; aspect-ratio: 16 / 9; height: auto; }
+html.read #film-step .fm { position: absolute; inset: 0; }
+html.read #film-step .fm-v { border-radius: 0; }
+
+/* ---------- a phone held sideways */
+html.phone-land #film-step .fm { inset: 0; }
+html.phone-land #film-step .fm-v { border-radius: 0; }
+html.phone-land .ui { right: max(10px, env(safe-area-inset-right, 0px)); bottom: calc(10px + env(safe-area-inset-bottom, 0px)); }
+
+/* =====================================================================================================================
+   read: each slide in one column. The rule for every slide: the same parts in the same order, the same grounds and
+   colours; side-by-side columns stack; a chart whose bars ran up now runs across (so its labels have room); a fixed
+   diagram becomes a flow down the page; one chart that cannot be redrawn (the memory curve) scrolls sideways at its
+   own size. No text is dropped and none is added. Sizes are design px on the 720 canvas (× 0.54 on a 390 px phone).
+   ===================================================================================================================== */
+
+/* 1 · cover: the logo, the title and the line on top; the building below, cropped by the foot of the page */
+html.read #cover { min-height: 1240px; }
+html.read #cover .apd-ground { --light-x: 68% !important; --light-y: 68% !important; --light-w: 64% !important; --light-h: 32% !important; }
+html.read .p-cover { max-width: none; display: flex; flex-direction: column; justify-content: flex-start; gap: 28px; }
+html.read .p-cv-words { margin-block: 12px 0; gap: 40px; }
+html.read .p-cv-words .apd-lockup { height: 44px; }
+html.read .p-cover h1 { font-size: 88px; line-height: 92px; }
+html.read .p-cv-bld { left: 236px; top: 440px; width: 470px; height: 946px; }
+
+/* 2 · the problem: the four facts one under another, each with its picture */
+html.read .pb-wrap { gap: 32px; }
+html.read .pb { grid-template-columns: 1fr; gap: 16px; }
+html.read .pb-c { padding: 26px 28px 22px; gap: 10px; }
+html.read .pb-c .v { font-size: 76px; }
+html.read .pb-c .l { min-height: 0; }
+html.read .pb-viz { height: 92px; padding-top: 16px; }
+html.read .pb-so { font-size: 40px; line-height: 48px; max-width: none; }
+
+/* 3 · the dynamo: still two by two (before beside after), each card with its drawing above its words */
+html.read .dy { gap: 26px; }
+html.read .dy-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 14px; row-gap: 12px; align-items: stretch; }
+html.read .dy-grid > span:first-child { display: none; }   /* the empty corner over the row names */
+html.read .dy-h { align-self: end; padding-left: 4px; font-size: var(--t-cap); line-height: var(--lh-cap); }
+html.read .dy-row { grid-column: 1 / -1; margin-top: 12px; font-size: 30px; line-height: 36px; }
+html.read .dy-c { grid-template-columns: minmax(0, 1fr); row-gap: 10px; align-content: start; padding: 14px 16px 18px; border-radius: 22px; }
+html.read .dy-ill.is-fac, html.read .dy-ill.is-bld { height: 170px; }
+html.read .dy-t { padding-top: 0; }
+html.read .dy-t b { font-size: 25px; line-height: 31px; }
+html.read .dy-so { font-size: 34px; line-height: 42px; max-width: none; }
+
+/* 4 · the solution: the title, the circle (whole, its names a size larger), then the agents and the rails */
+html.read #solution .apd-body { display: contents; }
+html.read #solution :is(.s-head, .sl-left, .s-foot) { position: relative; z-index: 1; }   /* over the ground, as the body was */
+html.read #solution .s-head { order: 1; max-width: none; }
+html.read #solution .apd-title { font-size: 46px; line-height: 54px; }
+html.read #solution .lp-ring { order: 2; position: relative !important; left: auto; top: auto; transform: none; zoom: .8; margin: -40px 0 -10px -40px; flex: none; }
+html.read #solution .sl-left, html.read #solution .sl-left.apd-fill { order: 3; width: auto; gap: 30px; }
+html.read #solution .s-foot { order: 4; }
+html.read #solution .apd-ground { --light-x: 50% !important; --light-y: 36% !important; --light-w: 30% !important; --light-h: 13% !important; }
+html.read .lp-lbl { top: 48px; font-size: 27px; line-height: 34px; }
+html.read .sl-ag b { font-size: 32px; line-height: 38px; }
+html.read .sl-rails .row { flex-direction: column; align-items: flex-start; gap: 10px; }
+
+/* 5 · the five levels: the steps as rows, level 1 first; each level's staffing beside it (it stood under it) */
+html.read .lv { display: grid; grid-template-columns: minmax(0, 1fr) 186px; column-gap: 16px; row-gap: 12px; justify-content: stretch; align-items: stretch; }
+html.read .lv-steps, html.read .lv-ppl, html.read .lv-row { display: contents; }
+html.read .lv-ppl .k { grid-column: 1 / -1; grid-row: 1; text-align: right; font-size: var(--t-cap); line-height: var(--lh-cap); }
+html.read .lv-s { grid-column: 1; height: auto; padding: 18px 22px; border-radius: 22px; }
+html.read .lv-s .who { margin-top: 8px; }
+html.read .lv-row > div { grid-column: 2; padding: 0; flex-direction: column; align-items: flex-start; justify-content: center; gap: 4px; }
+html.read .lv-row small { max-width: none; }
+html.read .lv-row b.t { font-size: 25px; line-height: 31px; }
+html.read .lv-s:nth-child(1), html.read .lv-row > div:nth-child(1) { grid-row: 2; }
+html.read .lv-s:nth-child(2), html.read .lv-row > div:nth-child(2) { grid-row: 3; }
+html.read .lv-s:nth-child(3), html.read .lv-row > div:nth-child(3) { grid-row: 4; }
+html.read .lv-s:nth-child(4), html.read .lv-row > div:nth-child(4) { grid-row: 5; }
+html.read .lv-s:nth-child(5), html.read .lv-row > div:nth-child(5) { grid-row: 6; }
+
+/* 6 · how it works: the flow runs down. In (four channels) → the agent → the rules (the lit card) → Yes | No side by
+   side, each over its outcome → the memory under both. Short hairlines stand in for the wires. */
+html.read .tkf { width: auto; height: auto; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 14px; row-gap: 14px; --wire: color-mix(in oklab, var(--text-primary) 42%, transparent); }
+html.read .tkf > * { position: relative !important; left: auto !important; top: auto !important; width: auto !important; height: auto !important; }
+html.read .tk-wires, html.read .tk-pulse { display: none !important; }
+html.read .tk-col { grid-column: 1 / -1; }
+html.read .tk-ch { padding-block: 15px; font-size: 24px; }
+html.read .tk-ch .apd-icon { width: 24px; height: 24px; }
+html.read .tk-agent, html.read .tk-gate, html.read .tk-mem { grid-column: 1 / -1; }
+html.read .tk-agent, html.read .tk-gate { margin-top: 30px; }
+html.read .tk-agent::before, html.read .tk-gate::before, html.read .tk-fork::before, html.read .tk-out::before {
+  content: ""; position: absolute; left: calc(50% - 1.25px); bottom: 100%; height: 44px; border-left: 2.5px solid var(--wire); }
+html.read .tk-fork { justify-self: center; margin-top: 30px; }
+html.read .tk-fork.is-yes::before { border-left-color: var(--done); }
+html.read .tk-fork.is-no::before { border-left: 2.5px dotted var(--text-primary); }
+html.read .tk-out { padding: 18px 20px; }
+html.read .tk-out::before { height: 14px; }
+html.read .tk-out.is-yes::before { border-left-color: var(--done); }
+html.read .tk-out.is-no::before { border-left: 2.5px dotted var(--text-primary); }
+html.read .tk-out .hd { flex-wrap: wrap; row-gap: 6px; }
+html.read .tk-out .hd b { font-size: 27px; line-height: 33px; }
+html.read .tk-lbl { margin-top: 18px; }
+html.read .tk-lbl:nth-of-type(odd) { justify-self: end; }
+html.read .tk-mem { margin-top: 26px; grid-template-columns: auto minmax(0, 1fr); }
+html.read .tk-mem::before { content: ""; position: absolute; left: calc(50% - 1.25px); bottom: 100%; height: 94px; border-left: 2.5px dashed var(--wire); }
+
+/* 7 · where we stand: the same two-by-two map with its axes, the cells taller than wide */
+html.read #position .apd-dek { font-size: 27px; line-height: 37px; }
+html.read .ps { grid-template-columns: 40px minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: auto auto 40px; gap: 12px; }
+html.read .ps-q { padding: 20px; border-radius: 20px; justify-content: flex-start; }
+html.read .ps-q .who { align-items: flex-start; gap: 10px; font-size: 26px; line-height: 32px; }
+html.read .ps-q .who .apd-icon { margin-top: 2px; }
+html.read .ps-q p { font-size: 24px; line-height: 32px; }
+html.read .ps-us { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+html.read .ps-ap { grid-template-columns: minmax(0, 1fr); padding: 20px; border-radius: 20px; }
+html.read .ps-ap .apd-lockup { height: 28px; }
+html.read .ps-ap .t { font-size: 26px; line-height: 32px; }
+html.read .ps-ap .fee { grid-column: 1; grid-row: 3; align-items: flex-start; }
+html.read .ps-ap .fee b { font-size: 84px; }
+html.read .ps-ap .fee span { white-space: normal; }
+html.read .ps-elise { padding: 18px 20px; border-radius: 20px; }
+html.read .ps-y .t { font-size: var(--t-cap); }
+html.read .ps { grid-template-rows: auto auto auto; }
+html.read .ps-x { flex-wrap: wrap; gap: 2px 10px; }   /* the two ends on the axis, the question under it */
+html.read .ps-x .t { order: 5; flex-basis: 100%; text-align: center; font-size: var(--t-cap); }
+
+/* 8 · property value: the bars and the two results, then the owner's card */
+html.read .va { grid-template-columns: minmax(0, 1fr); row-gap: 28px; }
+html.read .va-row .top b { font-size: 30px; }
+html.read .va-leg { flex-wrap: wrap; gap: 6px 24px; }
+html.read .va-big { column-gap: 20px; }
+html.read .va-big b { font-size: 50px; line-height: 56px; }
+
+/* 9 · why now: the three facts as three ruled rows */
+html.read .wn { grid-template-columns: minmax(0, 1fr); }
+html.read .wn > div { padding: 28px 0; gap: 12px; }
+html.read .wn > div:first-child { padding-top: 0; }
+html.read .wn > div + div { padding-left: 0; border-left: 0; border-top: 1px solid var(--line); }
+html.read .wn .v { font-size: 92px; }
+
+/* 10 · the memory: the curve keeps its size and scrolls sideways (it cannot be redrawn narrower and stay readable) */
+html.read .p-life { margin-inline: -40px; overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; }
+html.read .lc-plot, html.read .lc-tools, html.read .lc-row { left: 40px; }
+html.read .p-life::after { content: ""; position: absolute; left: 1736px; top: 0; width: 40px; height: 1px; }   /* the same margin at the far end */
+
+/* 11 · customers: the rows, then the field of squares */
+html.read .cu { grid-template-columns: minmax(0, 1fr); row-gap: 30px; }
+html.read .cu-rows b.n { font-size: 32px; line-height: 40px; }
+html.read .cu-rows .v { font-size: 44px; line-height: 50px; }
+html.read .cu-rows li.is-sum .v { font-size: 58px; line-height: 64px; }
+html.read .cu-fig { max-width: none; justify-self: stretch; }
+
+/* 12 · the business model: the price, the other income streams, the next track */
+html.read .bm { grid-template-columns: minmax(0, 1fr); row-gap: 28px; }
+html.read .bm-fee { padding: 26px 30px; }
+html.read .bm-fee .v { font-size: 100px; }
+html.read .bm-fee .t { font-size: 36px; line-height: 42px; }
+html.read .bm-blocks { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-auto-rows: auto; }
+html.read .bm-blocks b { font-size: 24px; line-height: 30px; }
+html.read .bm-next { grid-template-columns: minmax(0, 1fr); row-gap: 18px; padding: 22px 24px; }
+html.read .bm-nae b { font-size: 27px; line-height: 33px; }
+
+/* 13 · the plan: the road runs down the left, its seven stops in order beside it */
+html.read .p-road { position: relative; grid-template-columns: 56px minmax(0, 1fr); grid-template-rows: none; column-gap: 20px; row-gap: 26px; padding-block: 0; }
+html.read .r-line { position: absolute; left: 26px; top: 28px; bottom: 28px; width: 0; height: auto; margin: 0; border-top: 0; border-left: 4px dashed var(--text-secondary); }
+html.read .r-line::after { right: auto; left: -6px; top: auto; bottom: 0; width: 8px; height: 12%; background: linear-gradient(180deg, transparent, var(--page)); }
+html.read .r-mark { grid-column: 1 !important; grid-row: auto !important; justify-self: center; align-self: start; margin: 0; }
+html.read .r-stop { grid-column: 2 !important; grid-row: auto !important; justify-content: flex-start; gap: 4px; padding-right: 0; }
+html.read .r-title { font-size: 32px; line-height: 38px; }
+
+/* 14 · the budget: the same table, the labels once on the left; in each cell 2027 over 2028 */
+html.read #budget .bd2 { grid-template-columns: 166px repeat(3, minmax(0, 1fr)); column-gap: 8px; }
+html.read #budget .lab, html.read #budget .scn2 { grid-template-rows: 84px 108px 108px 116px; }
+html.read #budget .lab { padding-block: 14px; }
+html.read #budget .lab > span { font-size: var(--t-cap); line-height: 28px; }
+html.read #budget .scn2 { padding: 14px 12px; border-radius: 20px; -webkit-backdrop-filter: none; backdrop-filter: none; }
+html.read #budget .scn2 .hd { align-items: flex-start; gap: 8px; font-size: 23px; line-height: 27px; }
+html.read #budget .scn2 .hd i { width: 10px; height: 10px; margin-top: 9px; box-shadow: 0 0 0 4px color-mix(in oklab, var(--c) 22%, transparent); }
+html.read #budget .scn2 .r { flex-direction: column; align-items: flex-start; justify-content: center; gap: 0; }
+html.read #budget .scn2 .r em { min-width: 0; text-align: left; font-size: 21px; line-height: 26px; }
+html.read #budget .scn2 .r b { font-size: 36px; line-height: 40px; }
+html.read #budget .scn2 .r.is-res b { font-size: 44px; line-height: 48px; }
+
+/* 15 · the path to 2 bn kr: the bars run across, to the same scale, each with its milestone under it */
+html.read .ld-wrap { display: grid; grid-template-columns: minmax(0, 1fr); row-gap: 8px; }
+html.read .ld-bars, html.read .ld-ms { display: contents; }
+html.read .ld-col { flex-direction: row-reverse; justify-content: flex-end; align-items: center; gap: 14px; margin-top: 16px; }
+html.read .ld-v { margin: 0; font-size: 36px; line-height: 40px; }
+html.read .ld-bar { flex: none; height: 40px; min-height: 0; width: calc(var(--h) * 1.35); min-width: 8px; border-radius: 0 10px 10px 0;
+  border: 2.5px dashed color-mix(in oklab, var(--data-2) 70%, var(--text-primary)); border-left: 0; }
+html.read .ld-col.is-now .ld-bar { border: 0; border-radius: 0 6px 6px 0; }
+html.read .ld-ms { padding: 0; }
+html.read .ld-ms > div { padding-bottom: 16px; border-bottom: 1px solid var(--line); }
+html.read .ld-ms > div:last-child { border-bottom: 0; }
+html.read .ld-col:nth-child(1) { grid-row: 1; } html.read .ld-ms > div:nth-child(1) { grid-row: 2; }
+html.read .ld-col:nth-child(2) { grid-row: 3; } html.read .ld-ms > div:nth-child(2) { grid-row: 4; }
+html.read .ld-col:nth-child(3) { grid-row: 5; } html.read .ld-ms > div:nth-child(3) { grid-row: 6; }
+html.read .ld-col:nth-child(4) { grid-row: 7; } html.read .ld-ms > div:nth-child(4) { grid-row: 8; }
+html.read .ld-col:nth-child(5) { grid-row: 9; } html.read .ld-ms > div:nth-child(5) { grid-row: 10; }
+
+/* 16 · what the investor gets: the multiple, then the five steps, each bar under its date */
+html.read .rt { grid-template-columns: minmax(0, 1fr); row-gap: 26px; }
+html.read .rt-big b { font-size: 170px; }
+html.read .rt-big span { margin-top: 14px; }
+html.read .rt-rows li { grid-template-columns: minmax(0, 1fr); row-gap: 8px; padding-block: 14px; }
+html.read .rt-bar { height: 36px; width: calc(var(--w) * .8); }
+
+/* 17 · the round: the amount and its split, the six terms two by two, what the money funds */
+html.read .rd { grid-template-columns: minmax(0, 1fr); row-gap: 30px; }
+html.read .rd-loud > b { font-size: 140px; }
+html.read .rd-split .lbl { gap: 28px; }
+html.read .rd-terms { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
+html.read .rd-terms > div { min-height: 0; padding: 18px 20px; }
+html.read .rd-terms dd { font-size: 32px; line-height: 38px; white-space: normal; }
+html.read .rd-use { flex-direction: column; align-items: flex-start; gap: 14px; }
+
+/* 18 · the team: one person a row, the photo beside the words; the owners as four bars to scale */
+html.read .tm { gap: 34px; }
+html.read .tm-people { grid-template-columns: minmax(0, 1fr); gap: 0; }
+html.read .tm-people li { display: grid; grid-template-columns: 96px minmax(0, 1fr); column-gap: 22px; row-gap: 2px; align-items: start; padding-block: 16px; border-bottom: 1px solid var(--line); }
+html.read .tm-people li:first-child { padding-top: 0; }
+html.read .tm-ph { grid-row: 1 / span 3; width: 96px; height: 96px; margin: 0; }
+html.read .tm-people b { font-size: 30px; line-height: 36px; white-space: normal; }
+html.read .tm-people .r { min-height: 0; }
+html.read .tm-bar { grid-template-columns: minmax(0, 1fr); row-gap: 6px; }
+html.read .tm-bar i { height: 22px; border-radius: 7px; }
+html.read .tm-bar i:nth-of-type(1) { order: 1; width: 77%; } html.read .tm-bar span:nth-of-type(1) { order: 2; }
+html.read .tm-bar i:nth-of-type(2) { order: 3; width: 77%; } html.read .tm-bar span:nth-of-type(2) { order: 4; }
+html.read .tm-bar i:nth-of-type(3) { order: 5; width: 23%; } html.read .tm-bar span:nth-of-type(3) { order: 6; }
+html.read .tm-bar i:nth-of-type(4) { order: 7; width: 23%; } html.read .tm-bar span:nth-of-type(4) { order: 8; }
+html.read .tm-bar span { margin-bottom: 12px; }
+html.read .tm-bar span b { display: inline; margin-right: 10px; }
+
+/* 19 · the close: the logo and the line, the ask, the QR and the link; then the four done tasks and the city at rest */
+html.read #close { padding-bottom: 0; }
+html.read #close .p-close { order: 1; flex: none; gap: 30px; }
+html.read .p-close-top { flex-direction: column; align-items: flex-start; gap: 18px; }
+html.read .p-close .apd-lockup { height: 40px; }
+html.read .p-close .apd-statement { white-space: normal; padding-left: 20px; }
+html.read .cl-ask { width: auto; margin-top: 0; }
+html.read .cl-h { font-size: 38px; line-height: 44px; }
+html.read .cl-asks li { grid-template-columns: minmax(0, 1fr); row-gap: 2px; }
+html.read .cl-asks .w { padding-top: 0; font-size: var(--t-cap); line-height: var(--lh-cap); }
+html.read .cl-asks b { font-size: 27px; line-height: 34px; }
+html.read .p-next { margin-top: 0; }
+html.read #close .p-close-scene { order: 2; position: relative !important; left: auto; top: auto; width: auto; aspect-ratio: auto; margin: 6px -40px 0; display: flex; flex-direction: column; gap: 20px; overflow: hidden; }
+html.read #close .apd-scene__layer { position: static; order: -1; display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; padding-inline: 40px; pointer-events: auto; }
+html.read #close .p-pin { position: static; width: auto; height: auto; transform: none; border-radius: 0; background: none; box-shadow: none; }
+html.read #close .p-pin::before, html.read #close .p-pin::after { display: none; }
+html.read #close .p-pin > .p-chip { position: static; transform: none; width: auto; }
+html.read #close .p-close-scene > svg { display: block; position: static; width: 132%; height: auto; margin-left: -4%; }
+
+/* A–F · the appendix: one column */
+html.read .ax-src { grid-template-columns: minmax(0, 1fr); }
+html.read .lg { grid-template-columns: minmax(0, 1fr); row-gap: 30px; }
+html.read .lg-party { padding: 22px 24px; }
+html.read .lg-pts li { padding: 20px 22px; column-gap: 18px; }
+html.read .lg-pts b { font-size: 27px; line-height: 34px; }
+html.read .rk { grid-template-columns: minmax(0, 1fr); gap: 14px; }
+html.read .rk > div { padding: 24px 26px; }
+html.read .mk { grid-template-columns: minmax(0, 1fr); row-gap: 44px; }
+html.read .mk-rows strong { font-size: 36px; line-height: 42px; }
+html.read .mk .mk-map { width: 300px; margin: 10px auto 34px; }
+html.read .mk-lbl small { font-size: 20px; line-height: 24px; }
+html.read .mk-lbl b { font-size: 26px; line-height: 30px; }
+html.read .dv { grid-template-columns: minmax(0, 1fr); row-gap: 26px; }
+html.read .dv-big b { font-size: 160px; }
+html.read .dv-big span { margin-top: 14px; }
+html.read .dv-row { grid-template-columns: 200px minmax(0, 1fr); column-gap: 20px; }
+html.read .dv-row .ppl .apd-icon { width: 52px; height: 52px; }
+html.read .dv-row .ln { grid-column: 1 / -1; }
+/* F · the competitors: one company a block; each cell carries its column's name (present.js, read()) */
+html.read .cp, html.read .cp tbody, html.read .cp tr { display: block; }
+html.read .cp thead { display: none; }
+html.read .cp tbody { border-top: 2px solid var(--text-primary); }
+html.read .cp tr { padding: 18px 0 14px; border-bottom: 1px solid var(--line); }
+html.read .cp td { display: grid; grid-template-columns: 170px minmax(0, 1fr); column-gap: 16px; padding: 3px 0; border: 0; font-size: var(--t-cap); line-height: var(--lh-cap); }
+html.read .cp td::before { content: attr(data-l); font-weight: 600; color: var(--text-secondary); }
+html.read .cp td:first-child { display: block; margin-bottom: 8px; font-size: var(--t-cap); line-height: var(--lh-cap); }
+html.read .cp td:first-child::before { content: none; }
+html.read .cp td:first-child b { display: inline; margin-right: 12px; font-size: 30px; line-height: 36px; }
