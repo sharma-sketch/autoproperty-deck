@@ -1,0 +1,98 @@
+/* ---------- presenter: the kit's 1920 × 1080 slides, one at a time, fitted to the screen inside a margin, the surround in
+   the slide's own ground colour; slides crossfade, their parts build and settle, then Next. Adapted from the v4 investor
+   deck's presenter (work/investor-deck-v2/v4/src/present-v4.css): the same builds and glass controls, margins, and two
+   changes so the slide and the screen read as one: each slide's ground (or flat colour) is drawn to the edges of the
+   screen, not only the 16:9 box, and the next slide fades in over the last one with its ground, so the background never
+   changes before or after the slide. */
+html.present,html.present body{overflow:hidden;height:100%;margin:0}
+html.present body{background:var(--deck-ground,#0a0a0a)}
+html.present .apd{position:fixed;left:0;top:0;width:1920px;height:1080px;padding:0;display:block;transform-origin:0 0;--fit:1}
+html.present .apd>.apd-page{position:absolute;left:0;top:0;margin:0;zoom:1;box-shadow:none;background:transparent;overflow:visible;isolation:isolate;z-index:0;
+  visibility:hidden;opacity:0;transition:opacity .2s linear,visibility 0s linear .2s}
+html.present .apd>.apd-page.on{visibility:visible;opacity:1;z-index:2;transition:opacity .55s cubic-bezier(.25,1,.5,1),visibility 0s}
+html.present .apd>.apd-page.off{visibility:visible;opacity:1;z-index:1;transition:none}
+/* the slide's ground, or its flat colour (.deck-bd, added by present.js), covers the whole screen: --vx … --vh are the
+   screen's box in the slide's own 1920 × 1080 units, set on every fit */
+html.present .apd>.apd-page>.apd-ground{inset:auto;left:var(--vx,0px);top:var(--vy,0px);width:var(--vw,100%);height:var(--vh,100%)}
+html.present .apd>.apd-page>.deck-bd{position:absolute;left:var(--vx,0px);top:var(--vy,0px);width:var(--vw,100%);height:var(--vh,100%);z-index:-1;background:var(--page);pointer-events:none}
+.deck-bd{display:none}
+html.present .apd>.apd-page>.deck-bd{display:block}
+html.present .apd-bar{display:none!important}
+/* builds: an element marked .anim starts from its fx and settles into the slide as drawn (translate, scale and clip-path
+   compose with each part's own transform) */
+.apd-page.pre .anim{transition:none!important}
+.apd-page.pre .anim[data-fx=fade]{opacity:0}
+.apd-page.pre .anim[data-fx=rise]{opacity:0;translate:0 26px}
+.apd-page.pre .anim[data-fx=pop]{opacity:0;scale:.94;translate:0 10px}
+.apd-page.pre .anim[data-fx=left]{opacity:0;translate:-36px 0}
+.apd-page.pre .anim[data-fx=right]{opacity:0;translate:36px 0}
+.apd-page.pre .anim[data-fx=zoom]{opacity:0;scale:1.06}
+.apd-page.pre .anim[data-fx=up]{opacity:0;translate:0 56px}
+.apd-page.pre .anim[data-fx=wipe]{clip-path:inset(-40px 100% -40px -40px)}
+.apd-page.pre .anim[data-fx=grow]{clip-path:inset(0 100% 0 0 round 14px)}
+.apd-page.pre .anim[data-fx=grow-up]{clip-path:inset(100% 0 0 0)}
+.apd-page.play .anim{transition:opacity var(--dur,.6s) cubic-bezier(.25,1,.5,1) var(--d,0s),translate var(--dur,.6s) cubic-bezier(.25,1,.5,1) var(--d,0s),scale var(--dur,.6s) cubic-bezier(.25,1,.5,1) var(--d,0s),clip-path var(--dur,.9s) cubic-bezier(.65,0,.35,1) var(--d,0s)}
+.apd-page.play .anim[data-fx=wipe]{clip-path:inset(-40px)}
+.apd-page.play .anim[data-fx=grow]{clip-path:inset(0 0 0 0 round 14px)}
+.apd-page.play .anim[data-fx=grow-up]{clip-path:inset(-2px)}
+.apd-page.play.ff .anim{transition-duration:.18s!important;transition-delay:0s!important}
+@media print{html.present .apd{position:static;transform:none;width:auto;height:auto}html.present .apd>.apd-page{position:relative;visibility:visible;opacity:1;overflow:hidden}html.present .apd>.apd-page>.apd-ground{inset:0;left:0;top:0;width:auto;height:auto}.ui,.ov,.film{display:none!important}.deck-bd{display:none!important}.anim{opacity:1!important;translate:none!important;scale:none!important;clip-path:none!important}}
+@media(prefers-reduced-motion:reduce){html.present .apd>.apd-page,html.present .apd>.apd-page.on{transition:none}}
+
+/* ---------- controls: the v4 deck's glass pill (the kit's glass: sheen, dim, blur, hairline edge) at the bottom right,
+   kept compact: previous, next, the NO/EN switch and the PDF (the slide number is in each slide's foot). It steps aside while you talk and
+   comes back when the mouse moves. */
+.ui{position:fixed;right:max(14px,env(safe-area-inset-right,0px));bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:60;display:flex;align-items:center;gap:1px;padding:3px;border-radius:999px;
+  color:var(--gl-ink,#fff);font:600 12px/1 var(--font-sans);letter-spacing:0;
+  background:linear-gradient(180deg,rgba(255,255,255,var(--gl-sheen-a,.1)),rgba(255,255,255,var(--gl-sheen-b,.02)) 64%),rgba(10,10,10,var(--gl-dim,.66));
+  -webkit-backdrop-filter:blur(var(--gl-blur,18px)) saturate(1.3);backdrop-filter:blur(var(--gl-blur,18px)) saturate(1.3);
+  box-shadow:inset 0 0 0 1px var(--gl-edge,rgba(255,255,255,.16)),inset 0 1px 0 var(--gl-hi,rgba(255,255,255,.26)),0 16px 40px -18px rgba(0,0,0,.55);
+  transition:opacity .3s cubic-bezier(.25,1,.5,1),translate .3s cubic-bezier(.25,1,.5,1)}
+html:not(.present) :is(.ui,.ov){display:none}
+.ui.idle{opacity:0;translate:0 6px;pointer-events:none}
+.ui [hidden]{display:none!important}
+.ui button,.ui a{all:unset;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:5px;height:30px;min-width:30px;padding:0 7px;border-radius:999px;cursor:pointer;color:inherit;white-space:nowrap;transition:background-color .15s}
+.ui :is(button,a):hover{background:rgba(255,255,255,.12)}
+.ui :is(button,a):active{background:rgba(255,255,255,.2)}
+.ui :is(button,a):focus-visible{box-shadow:inset 0 0 0 2px #fff}
+.ui button:disabled{opacity:.35;cursor:default;background:none}
+.ui svg{width:16px;height:16px;flex:none;fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+.ui .sep{width:1px;height:16px;margin:0 3px;background:rgba(255,255,255,.16)}
+.ui .pdf{padding:0 10px 0 7px}
+.ui .pdf.busy{opacity:.6;cursor:progress}
+
+/* all slides: the whole deck at a glance, click one to go there */
+.ov{position:fixed;inset:0;z-index:70;background:#0E0D0C;color:#EFEBE6;overflow:auto;padding:calc(28px + env(safe-area-inset-top,0px)) max(28px,env(safe-area-inset-right,0px)) calc(40px + env(safe-area-inset-bottom,0px)) max(28px,env(safe-area-inset-left,0px));font-family:var(--font-sans)}
+.ov-h{display:flex;align-items:center;justify-content:space-between;gap:16px;max-width:1500px;margin:0 auto 22px}
+.ov-h b{font-size:18px;font-weight:700;letter-spacing:-.01em}
+.ov-h span{font-size:13px;color:#8C8780;margin-left:12px;font-weight:500}
+.ov-h button{all:unset;cursor:pointer;font:600 13px/1 var(--font-sans);padding:10px 14px;border-radius:999px;background:rgba(255,255,255,.08)}
+.ov-h button:hover{background:rgba(255,255,255,.14)}
+.ov-h button:focus-visible{outline:2px solid #FF645C}
+.ov-g{max-width:1500px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:22px 18px}
+.ov-t{all:unset;cursor:pointer;display:flex;flex-direction:column;gap:9px;min-width:0}
+.ov-box{position:relative;aspect-ratio:1920/1080;border-radius:9px;overflow:hidden;background:#1c1b1a;box-shadow:0 0 0 1px rgba(255,255,255,.08)}
+html.present .ov-box .apd-page{position:absolute;left:0;top:0;width:1920px;height:1080px;zoom:1;transform-origin:0 0;transform:scale(var(--k,.15));pointer-events:none;visibility:visible;opacity:1;translate:none;scale:none;box-shadow:none}
+.ov-t.cur .ov-box{box-shadow:0 0 0 2px #ffffff}
+.ov-t:hover .ov-box{box-shadow:0 0 0 2px #8C8780}
+.ov-t:focus-visible .ov-box{box-shadow:0 0 0 3px #ffffff}
+.ov-l{display:flex;gap:10px;font-size:13px;line-height:1.35;color:#CFC9C2;min-width:0}
+.ov-l em{font-style:normal;color:#8C8780;font-variant-numeric:tabular-nums;flex:none}
+.ov-l span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media(prefers-reduced-motion:reduce){.ui{transition:none}}
+
+/* the language switch: a two-segment toggle inside the pill, the current language filled */
+.ui .lang{display:inline-flex;align-items:center;gap:2px;padding:2px;border-radius:999px;background:rgba(255,255,255,.07)}
+.ui .lang button{height:26px;min-width:34px;padding:0 8px;font:700 11.5px/1 var(--font-sans);letter-spacing:.04em;color:rgba(255,255,255,.72)}
+.ui .lang button[aria-pressed=true]{background:#fff;color:#141211}
+.ui .lang button[aria-pressed=true]:hover{background:#fff}
+
+/* the film: a dialog over the deck; the video at most the screen, the close button over its corner */
+.film{position:fixed;inset:0;z-index:80;display:grid;place-items:center;padding:max(24px,4vmin);background:rgba(8,8,8,.86)}
+.film[hidden]{display:none}
+.film-box{position:relative;width:min(100%,calc((100vh - 8vmin) * 16 / 9));aspect-ratio:16/9}
+.film video{display:block;width:100%;height:100%;border-radius:14px;background:#000;box-shadow:0 30px 80px -30px rgba(0,0,0,.8)}
+.film-x{all:unset;box-sizing:border-box;position:absolute;right:-14px;top:-14px;width:40px;height:40px;border-radius:50%;display:grid;place-items:center;cursor:pointer;background:#fff;color:#141211;box-shadow:0 6px 18px -6px rgba(0,0,0,.6)}
+.film-x:focus-visible{box-shadow:0 0 0 3px #141211,0 0 0 5px #fff}
+.film-x svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round}
+html:not(.present) .cl-film{display:none}

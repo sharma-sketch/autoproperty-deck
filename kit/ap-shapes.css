@@ -1,0 +1,258 @@
+/* Autoproperty documents · shapes, icons and spacing (lab module, 1 Nov 2026; lab/reports/REPORT-shapes.md).
+   Load after ap-doc.css. Tokens only: DS colours (library/tokens.css), the DS spacing scale and radii.
+   ap-shapes.js draws the family (.apd-shape), injects the icon sprite and draws spacing guides. */
+
+/* ================= 1. Spacing: the DS scale on paper and on slides =================
+   Steps s1–s8 (--sp-1 … --sp-8) are DS space tokens. A4 design px use the scale as it is; slides use the same steps doubled, which lands
+   on the DS scale again (4→8 … 64→128), as the slide type scale is about twice the A4 one. The frame margins stay
+   ap-doc.css's (16 mm = 60 px on A4, 112 px on slides).
+   | step | A4 | slide | use                                                               |
+   | s1   |  4 |   8   | hair: an icon to its own label inside a chip, a value to its unit  |
+   | s2   |  8 |  16   | tight: an icon to its label, a label above its value              |
+   | s3   | 12 |  24   | related: lines in one group, rows in a list                       |
+   | s4   | 16 |  32   | group: groups inside a card, a small card's padding               |
+   | s5   | 24 |  48   | block: blocks on a page, the grid gutter, a card's padding        |
+   | s6   | 32 |  64   | apart: a title block to its first block, two unrelated blocks     |
+   | s7   | 48 |  96   | section: sections on a page                                      |
+   | s8   | 64 | 128   | break: the air on a cover, before a big number                    | */
+.apd, .apd-a4 {
+  --sp-hair: var(--sp-1); --sp-tight: var(--sp-2); --sp-related: var(--sp-3); --sp-group: var(--sp-4);
+  --sp-block: var(--sp-5); --sp-card: var(--sp-5); --sp-apart: var(--sp-6); --sp-section: var(--sp-7); --sp-break: var(--sp-8);
+}
+.apd, .apd-a4 { --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-5: 24px; --sp-6: 32px; --sp-7: 48px; --sp-8: 64px;
+  --r-card: 16px; --r-tile: .23; --i16: 16px; --i20: 20px; --i24: 24px; --icon: var(--i20); --hair: 1px; }
+.apd[data-format="slide"] { --sp-1: 8px; --sp-2: 16px; --sp-3: 24px; --sp-4: 32px; --sp-5: 48px; --sp-6: 64px; --sp-7: 96px; --sp-8: 128px;
+  --r-card: 28px; --i16: 32px; --i20: 40px; --i24: 48px; --icon: var(--i20); }
+
+/* An A4 page inside a slide (a specimen, a before/after): A4 type, frame and spacing again. */
+.apd-a4 { --m: 60px; --gap: 24px; --t-cover: 56px; --lh-cover: 60px; --t-title: 30px; --lh-title: 36px; --t-h: 18px; --lh-h: 24px;
+  --t-dek: 16px; --lh-dek: 24px; --t-body: 13.5px; --lh-body: 21px; --t-big: 44px; --t-label: 11.5px; --lh-label: 16px; --t-cap: 10.5px; --lh-cap: 14px;
+  font-size: var(--t-body); line-height: var(--lh-body); }
+.apd-mini { box-sizing: border-box; width: 794px; height: 1123px; flex: none; zoom: var(--mini-z, .5); padding: var(--m); background: var(--page);
+  color: var(--text-body); display: flex; flex-direction: column; gap: var(--gap); overflow: hidden; position: relative;
+  box-shadow: 0 0 0 1px var(--line), 0 24px 48px -24px rgba(23,21,19,.28); border-radius: 4px; }
+
+/* Layout helpers: stacks, sections, cards and the 12-column grid, all on the scale. */
+.apd-vstack { display: flex; flex-direction: column; gap: var(--g, var(--sp-group)); min-width: 0; }
+.apd-hstack { display: flex; align-items: center; gap: var(--g, var(--sp-tight)); min-width: 0; }
+.apd-g-1 { --g: var(--sp-1); } .apd-g-2 { --g: var(--sp-2); } .apd-g-3 { --g: var(--sp-3); } .apd-g-4 { --g: var(--sp-4); }
+.apd-g-5 { --g: var(--sp-5); } .apd-g-6 { --g: var(--sp-6); } .apd-g-7 { --g: var(--sp-7); } .apd-g-8 { --g: var(--sp-8); }
+.apd-sections { display: flex; flex-direction: column; gap: var(--sp-section); min-height: 0; }
+.apd-card { position: relative; box-sizing: border-box; padding: var(--sp-card); border-radius: var(--r-card); background: var(--tint-1, var(--sunken));
+  display: flex; flex-direction: column; gap: var(--g, var(--sp-tight)); min-width: 0; min-height: 0; }
+.apd-card.is-s { padding: var(--sp-group); }
+.apd-card.is-line { background: transparent; box-shadow: inset 0 0 0 1px var(--line); }
+.apd-g12 { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--sp-block); row-gap: var(--sp-block); }
+.c-1 { grid-column: span 1; } .c-2 { grid-column: span 2; } .c-10 { grid-column: span 10; } .c-11 { grid-column: span 11; }
+
+/* ================= 2. The polygon family =================
+   Corner = 38,13 % of the outer radius on every vertex of the sharp inner polygon (DS assets/Polygons). Shape says
+   what a thing is: a home or building's identity = hexagon, a person = circle, a thing = tile; the pentagon with its
+   door is the home in the logo; the decagon with a tick is the seal. Brand moments only: covers, openers, steps,
+   numbers, closing pages. Never under a chart, around a proof photo, as an icon container in a row, or on an empty
+   or error state (DS components/Shapes). */
+.apd-shape { position: relative; display: inline-block; vertical-align: middle; flex: none; box-sizing: border-box;
+  width: var(--shape-size, 96px); height: var(--shape-size, 96px); color: var(--shape-ink, var(--text-primary)); }
+.apd-shape > .apd-shape-svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; display: block; }
+.apd-shape > .apd-shape-defs { position: absolute; width: 0; height: 0; overflow: hidden; }
+.apd-shape-path { fill: currentColor; }
+.apd-shape[data-style="tint"] .apd-shape-path, .apd-shape[data-style="number"] .apd-shape-path { fill: var(--shape-tint, var(--sunken)); }
+/* A tint alone is 1,2 : 1 on paper; a shape that carries meaning keeps a hairline edge at 3 : 1 or more against its own
+   tint and the page (WCAG 1.4.11): stone-600 4,0 : 1 on the tint, 4,6 on paper; stone-400 in dark. */
+.apd-shape[data-style="number"] .apd-shape-path { stroke: var(--edge-strong, light-dark(#797068, #aaa19a)); stroke-width: var(--hair); }
+.apd-shape[data-style="outline"] .apd-shape-path, .apd-shape[data-style="dash"] .apd-shape-path, .apd-shape-path.is-line {
+  fill: none; stroke: currentColor; stroke-width: var(--hair); stroke-opacity: var(--line-k, 1); }
+.apd-shape[data-style="dash"] .apd-shape-path { stroke-dasharray: calc(var(--hair) * 6) calc(var(--hair) * 6); stroke-opacity: var(--line-k, .7); }
+.apd-shape-ring { fill: none; stroke: currentColor; stroke-width: var(--hair); stroke-opacity: var(--ring-k, .32); }
+.apd-shape-edge { fill: none; stroke: var(--edge, currentColor); stroke-width: var(--hair); stroke-opacity: var(--edge-k, .28); }
+.apd-shape-path.is-accent { stroke: var(--accent-ink); stroke-opacity: 1; }
+/* A ring with light along it (the step that is now, data-glow): warm light, never red (BRIEF § 8: milestones are ink or warm). */
+.apd-ring-glow { fill: none; stroke: var(--ring-glow, #dab78e); stroke-linejoin: round; }
+.apd-shape-path.is-lit { stroke: var(--text-primary); stroke-opacity: 1; stroke-width: calc(var(--hair) * 1.5); }
+/* The label: a number or a word at the optical centre (a triangle's centre sits low). */
+.apd-shape-label { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; transform: translateY(var(--label-dy, 0));
+  font-size: calc(var(--s-px, 96px) * var(--label-k, .34)); line-height: 1; font-weight: 700; letter-spacing: -.03em;
+  color: var(--label-ink, var(--text-primary)); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.apd-shape[data-n="3"] .apd-shape-label { --label-k: .27; }
+.apd-shape[data-style="fill"] .apd-shape-label { color: var(--label-ink, var(--page)); }
+.apd-shape[data-style="dash"] .apd-shape-label, .apd-shape[data-style="outline"] .apd-shape-label { color: var(--label-ink, var(--text-secondary)); }
+.apd-shape[data-style="glass"] .apd-shape-label, .apd-shape[data-style="glow"] .apd-shape-label { color: var(--label-ink, #ffffff); }
+.apd-shape-label small { font-size: .42em; font-weight: 600; letter-spacing: 0; margin-left: .08em; }
+/* Photo in a shape: a home's identity (hexagon), a person (circle). Never a proof photo (that is a card). The photo shows:
+   the shape stays whole on the page (ap-shapes.js pulls a window back), or leaves it by data-bleed ≤ .08 of its size;
+   data-focus keeps the subject inside (BRIEF § 11.5). */
+.apd-shape > .apd-shape-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+/* Light inside (data-style="glow"): a base colour and one glow, built like the grounds module's grounds (ap-shapes.js
+   LIGHT). ember = needs you or broken now (dark grounds only); warm and gold = a lived-in home; moss = fixed, done.
+   On light pages red is the lit card only (BRIEF § 11.1): no red glow, fill or outline variant on paper. */
+/* Glass over Ember: white 16 % → 4 %, an 18 px blur, a hairline (DS docs/02). At most two in view, never on paper. */
+.apd-shape > .apd-shape-blur { position: absolute; inset: 0; -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px); }
+.apd-shape-edge.is-glass { stroke: #ffffff; stroke-opacity: .3; }
+.apd-shape[data-style="glass"] { color: #ffffff; }
+/* Bleeding shapes: a window or a ground cropped by the page edge. Put them inside the page's .apd-ground layer. */
+.apd-shape.is-bleed { position: absolute; left: var(--x, auto); top: var(--y, auto); right: var(--xr, auto); bottom: var(--yb, auto); }
+.apd-ground > .apd-shape, .apd-ground > .apd-shapes { position: absolute; }
+
+/* Composites drawn as one SVG: the family (row, column, nested rings) and the field of homes. */
+/* Same specificity as .apd-shape (one class) so a page's own class can size a field; a bare :where() would lose to the
+   96 px default (craft QA K4). */
+.apd-shape:where([data-style="family"], [data-style="field"]) { display: block; width: var(--w, 100%); height: var(--h, 100%); }
+.apd-family-lbl.is-accent { fill: var(--accent-ink); }
+.apd-family-lbl.is-lit { fill: var(--text-primary); font-weight: 700; }
+/* No stroked knock-out (it printed as Type 3 glyphs): the rings are clipped round each label instead (ap-shapes.js). */
+.apd-family-lbl { fill: var(--text-secondary); font-family: var(--font-sans); font-weight: 600; letter-spacing: .02em; }
+.apd-field-on path { fill: var(--field-on, currentColor); fill-opacity: var(--field-on-k, .16); }
+.apd-field-off path { fill: none; stroke: var(--field-off, currentColor); stroke-width: var(--hair); stroke-opacity: var(--field-off-k, .45); }
+.apd-field-mark path { fill: var(--field-mark, var(--accent)); }
+/* Let homes, lived in: ink with a warm ochre door on paper, a dark tone with a lit door on dark grounds. */
+.apd-field-warm .apd-field-on path.home { fill: var(--field-home, light-dark(#1c1c1c, #615952)); fill-opacity: var(--field-home-k, 1); }
+.apd-field-warm .apd-field-on path.door { fill: var(--field-door, light-dark(#c79a60, #e9d3b8)); fill-opacity: 1; }
+.apd-field-ring path { fill: none; stroke: var(--field-ring, var(--text-primary)); stroke-width: calc(var(--hair) * 2); }
+
+/* Steps: the count of corners is the step (1 = triangle, 2 = square, 3 = pentagon, 4 = hexagon, 5 = octagon,
+   6 = decagon). Done = tint, now = ink with a ring, next = dashed. At most six steps. */
+.apd-shape-steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(var(--steps, 4), minmax(0, 1fr));
+  column-gap: var(--step-gap, var(--sp-block)); --shape-size: var(--step-size, 160px); }
+.apd-shape-steps > li { position: relative; display: flex; flex-direction: column; align-items: center; text-align: center; gap: var(--sp-tight); min-width: 0; }
+.apd-shape-steps > li > .apd-shape { margin-bottom: var(--sp-related); }
+.apd-shape-steps > li:not(:last-child)::after { content: ""; position: absolute; top: calc(var(--shape-size) / 2); height: 0;
+  left: calc(50% + var(--shape-size) / 2 + var(--sp-group)); right: calc(-1 * (var(--step-gap, var(--sp-block)) + 50% - var(--shape-size) / 2 - var(--sp-group)));
+  border-top: var(--hair) solid var(--line-strong); }
+.apd-shape-steps > li.is-now::after, .apd-shape-steps > li.is-next::after { border-top-style: dashed; }
+.apd-shape-steps .t { font-size: var(--t-h); line-height: var(--lh-h); font-weight: 600; letter-spacing: -.01em; color: var(--text-primary); }
+.apd-shape-steps .s { font-size: var(--t-label); line-height: var(--lh-label); color: var(--text-secondary); }
+.apd-shape-steps li.is-next .t { color: var(--text-secondary); }
+.apd-shape-steps li.is-now > .apd-shape { --ring-k: .4; }
+
+/* Growth: shapes gain corners and size; each shape's area is proportional to its value (ap-shapes.js). */
+.apd-grow { display: grid; grid-auto-flow: column; grid-auto-columns: auto; grid-template-rows: 1fr auto; justify-content: space-between; column-gap: var(--sp-block); row-gap: var(--sp-group); }
+.apd-grow > figure { display: contents; }
+.apd-grow > figure > .apd-shape { align-self: end; justify-self: center; }
+.apd-grow figcaption { display: flex; flex-direction: column; align-items: center; gap: var(--sp-hair); text-align: center; align-self: start; }
+.apd-grow .v { font-size: var(--t-h); line-height: var(--lh-h); font-weight: 700; letter-spacing: -.02em; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.apd-grow .w { font-size: var(--t-cap); line-height: var(--lh-cap); color: var(--text-secondary); }
+.apd-grow figure.is-key .v { font-size: calc(var(--t-big) * .5); line-height: 1; letter-spacing: -.035em; }
+
+/* Growth in three kinds of place (BRIEF § 11.11): a building → a street → the city, each a line scene (ap-lines.css
+   .apd-scene) standing on one baseline with a large soft golden light behind it; the light stays inside its stage, never
+   behind the number. The same ochre light in all three stages, the plan too, in both themes; the page is plain paper or
+   plain dark, never a ground with red light (ink-glow, Ember: growth is warm, BRIEF § 11.14). Numbers in one size (the page
+   title size), the label under each, the plan dashed and quieter.
+   <div class="apd-growth"><figure><div class="stage" style="--stage-h:360px"><figure class="apd-scene is-tall" …></figure>
+   </div><figcaption><span class="v">24</span><span class="w">homes · one building · 2025</span></figcaption></figure>… */
+.apd-growth { display: grid; grid-auto-flow: column; grid-auto-columns: auto; justify-content: space-between; align-items: end; column-gap: var(--sp-block); }
+.apd-growth > figure { margin: 0; display: flex; flex-direction: column; align-items: center; gap: var(--sp-group); min-width: 0; }
+.apd-growth .stage { position: relative; isolation: isolate; height: var(--stage-h, 360px); display: flex; align-items: flex-end; justify-content: center; padding-inline: var(--sp-group); }
+.apd-growth .stage > .apd-scene.is-tall { height: var(--scene-h, 100%); }
+/* The light: an ellipse wider than the scene, centred on it, eased over nine stops to nothing at its edge (no transform:
+   Chromium's PDF dropped translated glows; whole-pixel boxes stay vector). */
+.apd-growth .stage::before { content: ""; position: absolute; z-index: -1; pointer-events: none; border-radius: 50%;
+  left: calc(50% - var(--glow-w, 150%) / 2); top: calc(50% - var(--glow-h, 104%) / 2); width: var(--glow-w, 150%); height: var(--glow-h, 104%);
+  --gl: var(--growth-light, light-dark(rgb(218 183 142 / .78), rgb(199 154 96 / .5)));
+  background: radial-gradient(closest-side in oklab, var(--gl), color-mix(in oklab, var(--gl) 88%, transparent) 10%, color-mix(in oklab, var(--gl) 68%, transparent) 22%,
+    color-mix(in oklab, var(--gl) 44%, transparent) 40%, color-mix(in oklab, var(--gl) 32%, transparent) 54%, color-mix(in oklab, var(--gl) 20%, transparent) 68%,
+    color-mix(in oklab, var(--gl) 9%, transparent) 82%, color-mix(in oklab, var(--gl) 3%, transparent) 93%, transparent); }
+.apd-growth figcaption { display: flex; flex-direction: column; align-items: center; gap: var(--sp-hair); text-align: center; }
+.apd-growth .v { font-size: var(--t-title); line-height: var(--lh-title); font-weight: 700; letter-spacing: -.025em; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.apd-growth .w { font-size: var(--t-label); line-height: var(--lh-label); color: var(--text-secondary); }
+/* The plan: a dashed frame round its stage, the scene quieter, and the word in the label. */
+.apd-growth .is-plan .stage > .apd-scene { opacity: .72; }
+.apd-growth .is-plan .stage::after { content: ""; position: absolute; inset: calc(var(--sp-2) * -1) 0; border: var(--hair) dashed var(--line-strong); border-radius: var(--r-card); pointer-events: none; }
+
+/* Theme-only blocks: one composition tuned for each theme (the golden home, a growth ground). Print is light. */
+.apd-only-dark { display: none !important; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .apd-only-dark { display: var(--only-display, block) !important; } :root:not([data-theme="light"]) .apd-only-light { display: none !important; } }
+:root[data-theme="dark"] .apd-only-dark { display: var(--only-display, block) !important; }
+:root[data-theme="dark"] .apd-only-light { display: none !important; }
+@media print { :root .apd-only-dark { display: none !important; } :root .apd-only-light { display: var(--only-display, block) !important; } }
+
+/* A 16:9 slide set inside a slide (a specimen): slide type and spacing, at --mini-z. */
+.apd-mini.is-slide { width: 1920px; height: 1080px; --m: 112px; --gap: 48px; }
+
+/* The seal: the decagon with a tick, only for a moment that is done (DS Seal; signal-done, or ink for receipts). */
+.apd-shape[data-style="seal"] { --shape-size: var(--seal-size, 112px); }
+.apd-seal-shape { fill: var(--seal, var(--done)); }
+.apd-shape[data-style="seal"].is-ink .apd-seal-shape { fill: var(--text-primary); }
+.apd-seal-tick { fill: none; stroke: var(--seal-tick, var(--page)); stroke-width: 9; stroke-linecap: round; stroke-linejoin: round; }
+
+/* ================= 3. Icons (DS assets/Icons; docs/09-icons.md) =================
+   Brand icons (ap-*) are nouns, interface icons (ui-*) verbs and controls; one meaning each; 16, 20 or 24 at A4 design
+   size (32, 40, 48 on slides); colour comes from the text (currentColor); never a second colour, never outlined.
+   Containers carry meaning: a tile (23 % of its side) is a what, a circle is a who, bare sits in a line of text. */
+.apd-icon { width: var(--icon); height: var(--icon); display: inline-block; flex: none; vertical-align: -.18em; fill: currentColor; overflow: visible; }
+.apd-i16 { --icon: var(--i16); } .apd-i20 { --icon: var(--i20); } .apd-i24 { --icon: var(--i24); }
+.apd-tile, .apd-who { --box: calc(var(--icon) * 2); width: var(--box); height: var(--box); display: inline-grid; place-items: center; flex: none; box-sizing: border-box; }
+.apd-tile { border-radius: calc(var(--box) * var(--r-tile)); background: var(--tile-bg, var(--sunken)); color: var(--tile-ink, var(--text-primary)); }
+.apd-tile.is-line { background: transparent; box-shadow: inset 0 0 0 var(--hair) var(--line); }
+.apd-tile.is-ink { background: var(--text-primary); color: var(--page); }
+.apd-tile.is-needs { background: var(--needs-you-bg); color: var(--needs-you); }
+.apd-tile.is-wait { background: var(--waiting-bg); color: var(--waiting); }
+.apd-tile.is-done { background: var(--done-bg); color: var(--done); }
+.apd-tile.is-info { background: var(--info-bg); color: var(--info); }
+/* People and roles: circles in the DS role tints (tokens.css role-*), light and dark. */
+.apd-who { border-radius: 50%; background: var(--who-bg, var(--sunken)); color: var(--who-ink, var(--text-primary)); }
+.apd-who.is-tenant { --who-bg: light-dark(#f4e8d9, #3a2c18); --who-ink: light-dark(#5f3d04, #e9d3b8); }
+.apd-who.is-worker { --who-bg: light-dark(#e0ecf3, #1a2c36); --who-ink: light-dark(#254a5d, #c5dbe6); }
+.apd-who.is-vendor { --who-bg: light-dark(#ddd5cf, #2f2a26); --who-ink: light-dark(#4b433d, #ddd5cf); }
+.apd-who.is-owner { --who-bg: light-dark(#e5ece2, #22301d); --who-ink: light-dark(#384c2c, #cfdcc8); }
+.apd-who.is-pm { --who-bg: light-dark(#f2e6ec, #33222c); --who-ink: light-dark(#5a394c, #e5d0db); }
+/* A person's own photo in a circle, with the role's badge (the website's people chapter). */
+.apd-who-photo { position: relative; display: inline-block; flex: none; width: var(--shape-size, 120px); height: var(--shape-size, 120px); border-radius: 50%; }
+.apd-who-photo > img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; display: block; box-shadow: 0 0 0 var(--hair) var(--line); }
+.apd-who-photo > .apd-who { position: absolute; right: 0; bottom: 0; --icon: var(--i16); box-shadow: 0 0 0 calc(var(--sp-1) * .75) var(--ring-bg, var(--page)); }
+.apd-who-photo.is-glow > img { box-shadow: 0 0 0 1px rgba(255,255,255,.22), 0 0 calc(var(--shape-size, 120px) * .45) rgba(223,105,92,.42); }
+
+/* Compositions */
+/* Icon + label rows: a tile, a label with its line, a value at the end, hairlines between. */
+.apd-iconrows { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.apd-iconrows > li { display: grid; grid-template-columns: auto 1fr auto; align-items: center; column-gap: var(--sp-group); padding-block: var(--sp-related); border-bottom: var(--hair) solid var(--line); }
+.apd-iconrows > li:first-child { padding-top: 0; }
+.apd-iconrows .l { display: flex; flex-direction: column; min-width: 0; }
+.apd-iconrows .l b { font-weight: 600; color: var(--text-primary); }
+.apd-iconrows .l span { font-size: var(--t-label); line-height: var(--lh-label); color: var(--text-secondary); }
+.apd-iconrows .v { color: var(--text-primary); font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; text-align: right; }
+/* Icon legend: what each icon means on this document, once. */
+.apd-iconlegend { display: grid; grid-template-columns: repeat(var(--cols, 2), minmax(0, 1fr)); gap: var(--sp-group) var(--sp-block); margin: 0; }
+.apd-iconlegend > div { display: grid; grid-template-columns: auto 1fr; column-gap: var(--sp-related); align-items: center; }
+.apd-iconlegend dt { margin: 0; grid-row: span 2; }
+.apd-iconlegend dd { margin: 0; font-size: var(--t-label); line-height: var(--lh-label); color: var(--text-secondary); }
+.apd-iconlegend dd b { display: block; color: var(--text-primary); font-weight: 600; }
+/* A bare icon inside a line of text. */
+.apd-inline { white-space: nowrap; } .apd-inline .apd-icon { --icon: 1em; margin-right: .25em; vertical-align: -.14em; }
+/* An icon on glass over a photo (the kit's .apd-glass label). */
+.apd-glass.has-icon { display: inline-flex; align-items: center; gap: var(--sp-tight); }
+.apd-glass.has-icon .apd-icon { --icon: var(--i16); }
+
+/* ================= 4. Spacing guides (ap-shapes.js, data-guides) ================= */
+.apd-guides { position: absolute; inset: 0; pointer-events: none; z-index: 0; --gd: light-dark(#447994, #7eaac2); }
+.apd-guides.is-over { z-index: 8; }
+/* The content sits between the two guide layers. */
+.has-guides > :not(.apd-guides):not(.apd-sample):not(.apd-ground) { position: relative; z-index: 1; }
+.has-guides > .apd-sample { z-index: 2; }
+.apd-guides > i { position: absolute; display: block; box-sizing: border-box; }
+.apd-guide-col { background: color-mix(in srgb, var(--gd) 6%, transparent); box-shadow: inset 1px 0 0 color-mix(in srgb, var(--gd) 28%, transparent), inset -1px 0 0 color-mix(in srgb, var(--gd) 28%, transparent); }
+.apd-guide-frame { border: 1px dashed var(--gd); }
+.apd-guide-dim.is-h { border-top: 1px solid var(--gd); } .apd-guide-dim.is-v { border-left: 1px solid var(--gd); }
+.apd-guide-band { background: color-mix(in srgb, var(--gd) 16%, transparent); border-block: 1px solid color-mix(in srgb, var(--gd) 55%, transparent); }
+.apd-guide-band.is-v { border-block: 0; border-inline: 1px solid color-mix(in srgb, var(--gd) 55%, transparent); }
+.apd-guide-pad { background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--gd) 22%, transparent) 0 1px, transparent 1px 7px); }
+.apd-guide-base { border-top: 1px dashed var(--gd); }
+.apd-guide-base.is-off { border-top-color: var(--needs-you); }
+.apd-guide-tag { position: absolute; z-index: 1; transform: translate(-100%, -50%); font: 600 var(--t-cap)/1 var(--font-sans); color: var(--gd); background: var(--page);
+  padding: var(--sp-1); border-radius: 6px; box-shadow: 0 0 0 1px color-mix(in srgb, var(--gd) 45%, transparent); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.apd-guide-tag.is-mid { transform: translate(-50%, -50%); }
+.apd-guide-tag.is-start { transform: translate(0, -50%); }
+.apd-guide-tag.is-under { transform: translate(-50%, 0); }
+.apd-guide-tag.is-end-below { transform: translate(-100%, 35%); }
+.apd-guide-tag.is-end-above { transform: translate(-100%, -135%); }
+
+/* ================= 5. Print ================= */
+.apd-field-frost { display: none; }
+@media print {
+  /* backdrop-filter does not print: the glass keeps its gradient and hairline, and a field under it shows its frost. */
+  .apd-shape > .apd-shape-blur { display: none; }
+  .apd-field-frost { display: inline; }
+  .apd-field-sharp { mask: var(--print-mask); }
+  .apd-guides { --gd: #447994; }
+  .apd-shape > .apd-shape-img { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}

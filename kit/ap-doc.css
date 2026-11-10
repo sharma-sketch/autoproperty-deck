@@ -1,0 +1,461 @@
+/* Autoproperty documents · the page kit (DESIGN.md). Pages are fixed boxes drawn in A4 design units (794 × 1123 px at
+   96 dpi); `zoom` prints them at A5, A3 or Letter. Slides are 1920 × 1080. Light and dark for screens; print is light.
+   Load after the Google Fonts link for Inter and EB Garamond Italic; ap-doc.js sets @page and the screen fit. */
+
+/* Inter as static files (kit/fonts, SIL Open Font License): Google's variable Inter prints as a Type 3 font in Chromium
+   PDFs; static instances embed as real fonts. "Inter AP" so these win over any Inter loaded from Google. */
+@font-face { font-family: "Inter AP"; font-style: normal; font-weight: 400; font-display: swap; src: url("fonts/inter-400.woff") format("woff"); }
+@font-face { font-family: "Inter AP"; font-style: normal; font-weight: 500; font-display: swap; src: url("fonts/inter-500.woff") format("woff"); }
+@font-face { font-family: "Inter AP"; font-style: normal; font-weight: 600; font-display: swap; src: url("fonts/inter-600.woff") format("woff"); }
+@font-face { font-family: "Inter AP"; font-style: normal; font-weight: 700; font-display: swap; src: url("fonts/inter-700.woff") format("woff"); }
+
+/* ---------- tokens: DS roles (library/tokens.css) plus the data hues (DESIGN.md § 5) ---------- */
+:root {
+  --font-sans: "Inter AP", "Inter", -apple-system, "Segoe UI", system-ui, sans-serif;
+  --font-voice: "EB Garamond", Garamond, Georgia, serif;
+
+  --canvas: #fbf9f5;          /* ap-paper: the desk the pages sit on */
+  --page: #ffffff;
+  --sunken: #efe8e3;          /* ap-oat */
+  --line: #ddd5cf;            /* stone-200 */
+  --line-strong: #918880;     /* stone-500 */
+  --text-primary: #0a0a0a;
+  --text-body: #3f3d3c;
+  --text-secondary: #6c6865;
+  --link: #336178;
+  --mark: #0a0a0a;            /* the one highlighted mark */
+  --mark-on: #ffffff;
+
+  --needs-you: #b54a46; --needs-you-bg: #fff2f1;
+  --waiting: #7c5004;   --waiting-bg: #f4e8d9;
+  --done: #4a633c;      --done-bg: #e5ece2;
+  --info: #336178;      --info-bg: #e0ecf3;
+
+  --chart-quiet: #c4bcb5;     /* stone-300: context marks */
+  --chart-grid: #efe8e3;
+  --chart-axis: #c4bcb5;
+  --data-1: #1178a1; --data-2: #cc9140; --data-3: #8d4871; --data-4: #699552;
+  --seq-1: #e0ecf3; --seq-2: #c5dbe6; --seq-3: #a3c3d5; --seq-4: #7eaac2; --seq-5: #5f91ab; --seq-6: #447994; --seq-7: #336178; --seq-8: #254a5d;
+  --div-neg: #b17f3b; --div-mid: #efe8e3; --div-pos: #447994;
+  --ord-1: #aaa19a; --ord-2: #797068; --ord-3: #4b433d; --ord-4: #0a0a0a;
+
+  --brand-red: #b54a46; --coral: #df7f78; --accent: #df7f78; --accent-ink: #b54a46; --ember-deep: #4f1a18; --linen: #f8f2ed; --charcoal: #1c1c1c;
+
+  --shadow-page: 0 1px 2px rgba(23,21,19,.06), 0 12px 32px -12px rgba(23,21,19,.18);
+  --radius-control: 12px; --radius-card: 22px; --radius-pill: 999px; --radius-sm: 8px;
+
+  /* type, A4 design px (DESIGN.md § 4) */
+  --t-cover: 56px;   --lh-cover: 60px;
+  --t-title: 30px;   --lh-title: 36px;
+  --t-h: 18px;       --lh-h: 24px;
+  --t-dek: 16px;     --lh-dek: 24px;
+  --t-body: 13.5px;  --lh-body: 21px;
+  --t-big: 44px;
+  --t-label: 11.5px; --lh-label: 16px;
+  --t-cap: 10.5px;   --lh-cap: 14px;
+  --gap: 24px;
+  --lk-knob: #f8f2ed;        /* the logo's knob: linen on paper, charcoal on dark grounds */
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --canvas: #0a0a0a; --page: #171513; --sunken: #24211e; --line: #2a2925; --line-strong: #797068;
+    --text-primary: #ffffff; --text-body: #d4d3cf; --text-secondary: #918f8b; --link: #a3c3d5;
+    --mark: #ffffff; --mark-on: #0a0a0a; --lk-knob: #1c1c1c; --accent-ink: #f1a8a2;
+    --needs-you: #e3857d; --needs-you-bg: #2a1513; --waiting: #dab78e; --waiting-bg: #2a2113;
+    --done: #b1c5a7; --done-bg: #18211a; --info: #a3c3d5; --info-bg: #131c22;
+    --chart-quiet: #4b433d; --chart-grid: #24211e; --chart-axis: #4b433d;
+    --data-1: #409ac5; --data-2: #bf8532; --data-3: #b36b95; --data-4: #638e4c;
+    --seq-1: #173443; --seq-2: #254a5d; --seq-3: #336178; --seq-4: #447994; --seq-5: #5f91ab; --seq-6: #7eaac2; --seq-7: #a3c3d5; --seq-8: #c5dbe6;
+    --div-neg: #c79a60; --div-mid: #2a2925; --div-pos: #7eaac2;
+    --ord-1: #4b433d; --ord-2: #797068; --ord-3: #aaa19a; --ord-4: #ffffff;
+    --shadow-page: 0 1px 2px rgba(0,0,0,.5), 0 16px 40px -12px rgba(0,0,0,.6);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --canvas: #0a0a0a; --page: #171513; --sunken: #24211e; --line: #2a2925; --line-strong: #797068;
+  --text-primary: #ffffff; --text-body: #d4d3cf; --text-secondary: #918f8b; --link: #a3c3d5;
+  --mark: #ffffff; --mark-on: #0a0a0a; --lk-knob: #1c1c1c; --accent-ink: #f1a8a2;
+  --needs-you: #e3857d; --needs-you-bg: #2a1513; --waiting: #dab78e; --waiting-bg: #2a2113;
+  --done: #b1c5a7; --done-bg: #18211a; --info: #a3c3d5; --info-bg: #131c22;
+  --chart-quiet: #4b433d; --chart-grid: #24211e; --chart-axis: #4b433d;
+  --data-1: #409ac5; --data-2: #bf8532; --data-3: #b36b95; --data-4: #638e4c;
+  --seq-1: #173443; --seq-2: #254a5d; --seq-3: #336178; --seq-4: #447994; --seq-5: #5f91ab; --seq-6: #7eaac2; --seq-7: #a3c3d5; --seq-8: #c5dbe6;
+  --div-neg: #c79a60; --div-mid: #2a2925; --div-pos: #7eaac2;
+  --ord-1: #4b433d; --ord-2: #797068; --ord-3: #aaa19a; --ord-4: #ffffff;
+  --shadow-page: 0 1px 2px rgba(0,0,0,.5), 0 16px 40px -12px rgba(0,0,0,.6);
+  color-scheme: dark;
+}
+
+/* ---------- the desk and the pages ---------- */
+html, body { margin: 0; background: var(--canvas); color: var(--text-body); }
+body { font-family: var(--font-sans); font-size: var(--t-body); line-height: var(--lh-body); -webkit-font-smoothing: antialiased; font-feature-settings: "cv11", "ss01"; }
+.apd { --pw: 794px; --ph: 1123px; --pz: 1; --fit: 1; --m: 60px;
+  display: flex; flex-direction: column; align-items: center; gap: 24px;
+  padding-block: 72px 48px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.apd[data-format="a5"] { --pz: .7068; }   /* 1123 × .7068 = 793.7 px = 210 mm */
+.apd[data-format="a3"] { --pz: 1.4135; }  /* 1123 × 1.4135 = 1587.4 px = 420 mm */
+.apd[data-format="letter"] { --pz: 1.02771; --ph: 1027.5px; }
+.apd[data-format="a4-land"] { --pw: 1123px; --ph: 794px; }
+.apd[data-format="slide"] { --pw: 1920px; --ph: 1080px; --m: 112px;
+  --t-cover: 120px; --lh-cover: 124px; --t-title: 64px; --lh-title: 72px; --t-h: 40px; --lh-h: 48px;
+  --t-dek: 32px; --lh-dek: 44px; --t-body: 28px; --lh-body: 40px; --t-big: 160px;
+  --t-label: 22px; --lh-label: 30px; --t-cap: 20px; --lh-cap: 26px; --gap: 48px; }
+.apd[data-format="card"] { --pw: 1200px; --ph: 630px; --m: 64px; }
+
+.apd-page { box-sizing: border-box; position: relative; width: var(--pw); height: var(--ph); flex: none;
+  zoom: calc(var(--pz) * var(--fit)); background: var(--page); color: var(--text-body); box-shadow: var(--shadow-page);
+  padding: var(--m); display: flex; flex-direction: column; gap: var(--gap); overflow: hidden;
+  font-size: var(--t-body); line-height: var(--lh-body); }
+.apd-page > * { min-width: 0; }
+.apd-body { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: var(--gap); }
+.apd-fill { flex: 1; min-height: 0; }
+.apd-body > :not(.apd-fill), .apd-page > :not(.apd-body):not(.apd-fill) { flex-shrink: 0; }  /* a full page overflows (and the check says so); it never squashes a block */
+.apd-sample { position: absolute; top: 20px; right: 24px; font-size: var(--t-cap); line-height: var(--lh-cap); font-weight: 600; color: var(--waiting); background: var(--waiting-bg); padding: 2px 8px; border-radius: var(--radius-pill); }
+
+/* running head and foot */
+.apd-head { display: flex; align-items: center; gap: 10px; font-size: var(--t-label); line-height: var(--lh-label); color: var(--text-secondary); padding-bottom: 12px; border-bottom: 1px solid var(--line); }
+.apd-head .apd-doc { color: var(--text-primary); font-weight: 600; }
+.apd-head .apd-sec { margin-left: auto; }
+/* The logo mark is the switch (REF-11), 687 × 388: as in the lockup its height is 0,86 × the text beside it and the width
+   follows; set --mark-h to size it by height alone, never a square box. */
+.apd-mark { height: var(--mark-h, .86em); width: calc(var(--mark-h, .86em) * 687 / 388); flex: none; color: var(--text-primary); }
+.apd-foot { display: grid; grid-template-columns: 1fr auto auto; gap: 16px; align-items: end; font-size: var(--t-cap); line-height: var(--lh-cap); color: var(--text-secondary); padding-top: 10px; border-top: 1px solid var(--line); }
+.apd-foot .apd-src { min-width: 0; }
+.apd-foot .apd-num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.apd-url { color: var(--text-primary); font-weight: 600; white-space: nowrap; }
+
+/* ---------- type ---------- */
+.apd h1, .apd h2, .apd h3, .apd p, .apd figure, .apd blockquote, .apd ul, .apd ol, .apd dl { margin: 0; }
+.apd-title { font-size: var(--t-title); line-height: var(--lh-title); font-weight: 700; letter-spacing: -.025em; color: var(--text-primary); text-wrap: balance; max-width: 22em; }
+.apd-dek { font-size: var(--t-dek); line-height: var(--lh-dek); color: var(--text-body); max-width: 36em; text-wrap: pretty; }
+.apd-h { font-size: var(--t-h); line-height: var(--lh-h); font-weight: 600; letter-spacing: -.01em; color: var(--text-primary); text-wrap: balance; }
+.apd-lede { display: flex; flex-direction: column; gap: 10px; }
+.apd-text { max-width: 34em; text-wrap: pretty; }
+.apd-text + .apd-text { margin-top: 10px; }
+.apd-meta { font-size: var(--t-label); line-height: var(--lh-label); color: var(--text-secondary); }
+.apd-cap { font-size: var(--t-cap); line-height: var(--lh-cap); color: var(--text-secondary); }
+.apd-voice { font-family: var(--font-voice); font-style: italic; font-weight: 400; font-size: calc(var(--t-dek) * 1.5); line-height: 1.25; color: var(--text-body); }
+.apd-num-tab { font-variant-numeric: tabular-nums; }
+.apd b, .apd strong { color: var(--text-primary); font-weight: 600; }
+.apd a { color: var(--link); text-underline-offset: 2px; }
+
+/* ---------- grid ---------- */
+.apd-grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: 23px; row-gap: var(--gap); }
+.apd[data-format="slide"] .apd-grid { column-gap: 48px; }
+.c-3 { grid-column: span 3; } .c-4 { grid-column: span 4; } .c-5 { grid-column: span 5; } .c-6 { grid-column: span 6; }
+.c-7 { grid-column: span 7; } .c-8 { grid-column: span 8; } .c-9 { grid-column: span 9; } .c-12 { grid-column: 1 / -1; }
+.apd-stack { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.apd-row { display: flex; gap: var(--gap); align-items: flex-start; }
+.apd-rule { border: 0; border-top: 1px solid var(--line); margin: 0; }
+
+/* ---------- information blocks ---------- */
+/* Big number: one per page */
+.apd-big { display: flex; flex-direction: column; gap: 4px; }
+.apd-big .v { font-size: var(--t-big); line-height: 1; font-weight: 700; letter-spacing: -.03em; color: var(--text-primary); }
+.apd-big .v small { font-size: .42em; font-weight: 600; letter-spacing: 0; color: var(--text-secondary); margin-left: .15em; }
+.apd-big .l { font-size: var(--t-label); line-height: var(--lh-label); color: var(--text-secondary); }
+
+/* KPI row: the DS Stat tile on paper */
+.apd-kpis { display: grid; grid-template-columns: repeat(var(--n, 4), minmax(0, 1fr)); border: 1px solid var(--line); border-radius: var(--radius-control); overflow: hidden; }
+.apd-kpi { padding: 14px 16px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.apd-kpi + .apd-kpi { border-left: 1px solid var(--line); }
+.apd-kpi .l { font-size: var(--t-label); line-height: var(--lh-label); color: var(--text-secondary); }
+.apd-kpi .v { font-size: calc(var(--t-title) * .93); line-height: 1.1; font-weight: 700; letter-spacing: -.02em; color: var(--text-primary); }
+.apd-kpi .v small { font-size: .5em; font-weight: 600; color: var(--text-secondary); letter-spacing: 0; }
+.apd-kpi .d { font-size: var(--t-cap); line-height: var(--lh-cap); color: var(--text-secondary); }
+.apd-kpi.is-red .v { color: var(--needs-you); }
+
+/* A finding: the claim, its number and its source */
+.apd-finding { display: grid; grid-template-columns: 20px 1fr; column-gap: 12px; align-items: start; }
+.apd-finding svg { width: 20px; height: 20px; margin-top: 1px; color: var(--text-primary); }
+.apd-finding .t { color: var(--text-primary); font-weight: 600; }
+.apd-finding .s { grid-column: 2; font-size: var(--t-cap); line-height: var(--lh-cap); color: var(--text-secondary); margin-top: 2px; }
+.apd-findings { display: flex; flex-direction: column; gap: 14px; }
+
+/* Fact list */
+.apd-facts { display: grid; grid-template-columns: auto 1fr; column-gap: 0; row-gap: 0; }
+.apd-facts dt, .apd-facts dd { padding: 7px 0; border-bottom: 1px solid var(--line); margin: 0; }
+.apd-facts dt { color: var(--text-secondary); font-size: var(--t-label); padding-right: 20px; }
+.apd-facts dd { color: var(--text-primary); font-weight: 500; text-align: right; font-variant-numeric: tabular-nums; }
+
+/* Table: the DS Table on paper */
+.apd-table { width: 100%; border-collapse: collapse; font-size: var(--t-label); line-height: var(--lh-label); }
+.apd-table th { text-align: left; font-weight: 600; color: var(--text-primary); background: var(--sunken); padding: 8px 10px; }
+.apd-table th:first-child { border-radius: 8px 0 0 8px; } .apd-table th:last-child { border-radius: 0 8px 8px 0; }
+.apd-table td { padding: 8px 10px; border-bottom: 1px solid var(--line); color: var(--text-body); vertical-align: top; }
+.apd-table td:first-child { color: var(--text-primary); font-weight: 500; }
+.apd-table .n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.apd-table .sub { display: block; font-size: var(--t-cap); color: var(--text-secondary); font-weight: 400; }
+
+/* Status pill: always a word */
+.apd-pill { display: inline-flex; align-items: center; gap: 6px; padding: 1px 8px; border-radius: var(--radius-pill); font-size: var(--t-cap); line-height: calc(var(--lh-cap) + 4px); font-weight: 600; white-space: nowrap; }
+.apd-pill::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.apd-pill.needs { color: var(--needs-you); background: var(--needs-you-bg); }
+.apd-pill.wait { color: var(--waiting); background: var(--waiting-bg); }
+.apd-pill.done { color: var(--done); background: var(--done-bg); }
+.apd-pill.info { color: var(--info); background: var(--info-bg); }
+
+/* Timeline: DS diamonds on a spine */
+.apd-timeline { list-style: none; padding: 0; display: flex; flex-direction: column; }
+.apd-timeline li { position: relative; padding: 0 0 14px 28px; }
+.apd-timeline li::before { content: ""; position: absolute; left: 7px; top: 14px; bottom: 0; width: 2px; background: var(--line); }
+.apd-timeline li:last-child::before { display: none; }
+.apd-timeline li svg { position: absolute; left: 0; top: 2px; width: 16px; height: 16px; color: var(--text-secondary); }
+.apd-timeline .t { color: var(--text-primary); font-weight: 600; }
+.apd-timeline .w { font-size: var(--t-cap); line-height: var(--lh-cap); color: var(--text-secondary); }
+
+/* Steps: numbered because order is the information */
+.apd-steps { list-style: none; padding: 0; display: grid; grid-template-columns: repeat(var(--n, 4), minmax(0, 1fr)); gap: 16px; counter-reset: s; }
+.apd-steps li { counter-increment: s; display: flex; flex-direction: column; gap: 6px; padding-top: 12px; border-top: 2px solid var(--line); }
+.apd-steps li.is-now { border-top-color: var(--mark); }
+.apd-steps li::before { content: counter(s); font-size: var(--t-cap); font-weight: 700; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+.apd-steps .t { color: var(--text-primary); font-weight: 600; }
+
+/* 2 × 2 matrix */
+.apd-matrix { display: grid; grid-template-columns: auto 1fr 1fr; grid-template-rows: 1fr 1fr auto; gap: 8px; }
+.apd-matrix .q { background: var(--sunken); border-radius: var(--radius-control); padding: 14px 16px; display: flex; flex-direction: column; gap: 6px; min-height: 0; }
+.apd-matrix .q.is-key { background: var(--mark); color: var(--mark-on); }
+.apd-matrix .q.is-key .t, .apd-matrix .q.is-key .apd-cap { color: inherit; }
+.apd-matrix .q .t { color: var(--text-primary); font-weight: 600; }
+.apd-matrix .ax { font-size: var(--t-cap); color: var(--text-secondary); display: flex; align-items: center; justify-content: center; }
+.apd-matrix .ax.y { writing-mode: vertical-rl; transform: rotate(180deg); grid-row: 1 / 3; }
+.apd-matrix .ax.x { grid-column: 2 / 4; }
+
+/* Comparison columns */
+.apd-compare { display: grid; grid-template-columns: repeat(var(--n, 3), minmax(0, 1fr)); gap: 12px; }
+.apd-option { border: 1px solid var(--line); border-radius: var(--radius-card); padding: 18px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.apd-option.is-pick { border: 2px solid var(--mark); padding: 17px; }
+.apd-option .t { color: var(--text-primary); font-weight: 600; font-size: var(--t-h); line-height: var(--lh-h); }
+
+/* Quote and heads-up */
+.apd-quote { font-size: calc(var(--t-dek) * 1.25); line-height: 1.4; color: var(--text-primary); font-weight: 500; letter-spacing: -.01em; text-wrap: balance; }
+.apd-quote cite { display: block; margin-top: 10px; font-style: normal; font-size: var(--t-label); font-weight: 500; color: var(--text-secondary); }
+.apd-headsup { background: var(--sunken); border-radius: var(--radius-control); padding: 12px 14px; display: grid; grid-template-columns: 18px 1fr; gap: 10px; }
+.apd-headsup svg { width: 18px; height: 18px; color: var(--text-primary); }
+
+/* Sources and footnotes */
+.apd-sources { font-size: var(--t-cap); line-height: var(--lh-cap); color: var(--text-secondary); padding-left: 1.2em; margin: 0; }
+.apd-sources li + li { margin-top: 4px; }
+sup.apd-fn { font-size: .7em; color: var(--text-secondary); }
+
+/* The short link, written out, with its QR code (ap-doc.js draws it when the QR library loads) */
+.apd-link { display: grid; grid-template-columns: auto 1fr; gap: 12px; align-items: center; }
+.apd-qr { width: 64px; height: 64px; display: grid; place-items: center; background: #fff; border-radius: 8px; padding: 4px; box-sizing: border-box; }
+.apd-qr svg, .apd-qr img { width: 100%; height: 100%; display: block; }
+.apd-qr:empty { background: var(--sunken); }
+
+/* ---------- figures (charts render into .apd-chart via ap-charts.js) ---------- */
+.apd-figure { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.apd-figure > .apd-h { font-size: calc(var(--t-h) * .9); }
+.apd-figure .sub { font-size: var(--t-cap); line-height: var(--lh-cap); color: var(--text-secondary); margin-top: -4px; }
+.apd-chart { position: relative; width: 100%; min-height: 40px; }
+.apd-chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+.apd-chart.is-fill { flex: 1; min-height: 0; }
+.apd-chart.is-fill > svg { position: absolute; inset: 0; height: 100%; }
+.apd-chart svg text { font-family: var(--font-sans); fill: var(--text-secondary); font-size: var(--t-cap); }
+.apd-chart svg .lbl-strong { fill: var(--text-primary); font-weight: 600; }
+.apd-chart svg .lbl-red { fill: var(--needs-you); font-weight: 600; }
+.apd-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: var(--t-cap); line-height: var(--lh-cap); color: var(--text-secondary); }
+.apd-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.apd-legend svg { width: 12px; height: 12px; }
+.apd-source { font-size: var(--t-cap); line-height: var(--lh-cap); color: var(--text-secondary); }
+.apd-tip { position: absolute; z-index: 5; pointer-events: none; background: var(--text-primary); color: var(--page); font-size: 12px; line-height: 16px; padding: 6px 8px; border-radius: 8px; white-space: nowrap; transform: translate(-50%, calc(-100% - 10px)); opacity: 0; transition: opacity 120ms ease-out; }
+.apd-tip.is-on { opacity: 1; }
+.apd-tablebtn { align-self: flex-start; font: inherit; font-size: var(--t-cap); color: var(--link); background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+.apd-tablebtn:focus-visible { outline: 2px solid var(--link); outline-offset: 2px; border-radius: 4px; }
+.apd-datatable { font-size: var(--t-cap); }
+.apd-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* ---------- visual design: grounds and the polygon family ---------- */
+.apd-ground { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+.apd-ground i { position: absolute; border-radius: 50%; }
+.apd-ground.ember { background: #0a0a0a; }
+.apd-ground.ember i:nth-child(1) { width: 95%; aspect-ratio: 1; right: -32%; top: -40%; background: radial-gradient(closest-side in oklab, rgba(223,105,92,.9), rgba(181,74,70,.42) 50%, transparent); }
+.apd-ground.ember i:nth-child(2) { width: 80%; aspect-ratio: 1; right: -24%; bottom: -36%; background: radial-gradient(closest-side in oklab, rgba(115,41,38,.95), rgba(79,26,24,.5) 55%, transparent); }
+.apd-ground.ember i:nth-child(3) { width: 70%; aspect-ratio: 1; left: -26%; bottom: -34%; background: radial-gradient(closest-side in oklab, rgba(120,112,106,.42), transparent); }
+.apd-ground.haze { background: #fbf9f5; }
+.apd-ground.ember i:nth-child(1), .apd-ground.haze i:nth-child(1) { width: calc(round(calc(95% * var(--pz, 1)), 1px) / var(--pz, 1)); }
+.apd-ground.ember i:nth-child(2), .apd-ground.haze i:nth-child(2) { width: calc(round(calc(80% * var(--pz, 1)), 1px) / var(--pz, 1)); }
+.apd-ground.ember i:nth-child(3), .apd-ground.haze i:nth-child(3) { width: calc(round(calc(70% * var(--pz, 1)), 1px) / var(--pz, 1)); }
+.apd-ground.ember.is-flip i:nth-child(1), .apd-ground.haze.is-flip i:nth-child(1) { left: -32%; right: auto; }
+.apd-ground.ember.is-flip i:nth-child(2), .apd-ground.haze.is-flip i:nth-child(2) { left: -24%; right: auto; }
+.apd-ground.ember.is-flip i:nth-child(3), .apd-ground.haze.is-flip i:nth-child(3) { right: -26%; left: auto; }
+.apd-ground.haze i:nth-child(1) { width: 95%; aspect-ratio: 1; right: -32%; top: -40%; background: radial-gradient(closest-side in oklab, rgba(223,105,92,.55), rgba(234,171,165,.36) 50%, transparent); }
+.apd-ground.haze i:nth-child(2) { width: 80%; aspect-ratio: 1; right: -24%; bottom: -36%; background: radial-gradient(closest-side in oklab, rgba(234,171,165,.7), rgba(234,171,165,.24) 55%, transparent); }
+.apd-ground.haze i:nth-child(3) { width: 70%; aspect-ratio: 1; left: -26%; bottom: -34%; background: radial-gradient(closest-side in oklab, rgba(170,161,154,.5), transparent); }
+/* A ground carries its whole palette, so a Haze page stays light and an Ember page dark in any theme and in print. */
+.apd-page.on-ember, .on-ember { --page: #0a0a0a; --sunken: #24211e; --line: rgba(255,255,255,.18); --line-strong: #797068; --text-primary: #ffffff; --text-body: #efe9e4; --text-secondary: rgba(255,255,255,.66); --link: #a3c3d5;
+  --mark: #ffffff; --mark-on: #0a0a0a; --lk-knob: #1c1c1c; --accent-ink: #f1a8a2; --needs-you: #e3857d; --needs-you-bg: #2a1513; --waiting: #dab78e; --waiting-bg: #2a2113; --done: #b1c5a7; --done-bg: #18211a; --info: #a3c3d5; --info-bg: #131c22;
+  --chart-quiet: #6c6865; --chart-grid: rgba(255,255,255,.08); --chart-axis: #6c6865; --data-1: #409ac5; --data-2: #bf8532; --data-3: #b36b95; --data-4: #638e4c;
+  --seq-1: #173443; --seq-2: #254a5d; --seq-3: #336178; --seq-4: #447994; --seq-5: #5f91ab; --seq-6: #7eaac2; --seq-7: #a3c3d5; --seq-8: #c5dbe6; color-scheme: dark; background: #0a0a0a; }
+.apd-page.on-haze, .on-haze { --page: #ffffff; --sunken: #efe8e3; --line: rgba(10,10,10,.12); --line-strong: #918880; --text-primary: #0a0a0a; --text-body: #3f3d3c; --text-secondary: #4b433d; --link: #336178;
+  --mark: #0a0a0a; --mark-on: #ffffff; --lk-knob: #f8f2ed; --accent-ink: #b54a46; --needs-you: #b54a46; --needs-you-bg: #fff2f1; --waiting: #7c5004; --waiting-bg: #f4e8d9; --done: #4a633c; --done-bg: #e5ece2; --info: #336178; --info-bg: #e0ecf3;
+  --chart-quiet: #c4bcb5; --chart-grid: #efe8e3; --chart-axis: #c4bcb5; --data-1: #1178a1; --data-2: #cc9140; --data-3: #8d4871; --data-4: #699552;
+  --seq-1: #e0ecf3; --seq-2: #c5dbe6; --seq-3: #a3c3d5; --seq-4: #7eaac2; --seq-5: #5f91ab; --seq-6: #447994; --seq-7: #336178; --seq-8: #254a5d; color-scheme: light; background: #fbf9f5; }
+/* Everything after a ground or a photo fade sits above it. :where() keeps this at zero specificity, so a part that must
+   stay absolute (a rail, a photo tag, a bleed, anything with .apd-abs) simply says so. */
+:where(.apd-page > :is(.apd-ground, .apd-fade) ~ :not(.apd-pattern, .apd-sample, .apd-photo-tag, .apd-rail, .apd-abs, .is-bleed, .apd-ground, .apd-fade)) { position: relative; }
+.apd-pattern { position: absolute; pointer-events: none; color: var(--text-primary); opacity: .07; }
+.apd-pattern svg { width: 100%; height: 100%; display: block; }
+
+/* ---------- imagery (DS docs/07-imagery.md): Nordic light, real rooms, hands, keys and doors. A home's identity in a
+   hexagon, a person in a circle, a photo people look at in a card at the nested radius. Photos never sit under a chart. */
+.apd-photo { position: relative; margin: 0; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.apd-photo .ph { position: relative; overflow: hidden; border-radius: 12px; background: var(--sunken); aspect-ratio: var(--ratio, 3 / 2); }
+.apd-photo .ph img, .apd-bleed img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: var(--focus, 50% 50%); display: block; }
+.apd-photo figcaption { font-size: var(--t-cap); line-height: var(--lh-cap); color: var(--text-secondary); }
+.apd-glass { position: absolute; left: 14px; bottom: 14px; max-width: calc(100% - 28px); color: #ffffff; border-radius: 10px; padding: 8px 12px; font-size: var(--t-label); line-height: var(--lh-label);
+  background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.02) 64%), rgba(10,10,10,.66); -webkit-backdrop-filter: blur(18px) saturate(1.3); backdrop-filter: blur(18px) saturate(1.3);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.16), inset 0 1px 0 rgba(255,255,255,.26); }
+.apd-glass b { color: #ffffff; font-weight: 600; }
+.apd-photo-tag { position: absolute; z-index: 2; right: 14px; top: 14px; font-size: var(--t-cap); line-height: var(--lh-cap); font-weight: 600; color: #0a0a0a; background: rgba(255,255,255,.86); padding: 2px 8px; border-radius: 999px; }
+/* A full-bleed photo across the top of a page (covers, openers, photo posters); the page's text sits below it. */
+.apd-page.is-bleed { padding: 0; gap: 0; }
+.apd-page.is-bleed > .apd-inner { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: var(--gap); padding: calc(var(--m) * .6) var(--m) var(--m); }
+.apd-bleed { position: relative; flex: none; height: var(--h, 55%); overflow: hidden; background: var(--sunken); }
+.apd-hex { display: block; width: var(--hex-size, var(--size, 180px)); aspect-ratio: 1; flex: none; }
+.apd-hex svg, .apd-person svg { width: 100%; height: 100%; display: block; }
+.apd-person { display: block; width: var(--avatar-size, var(--size, 56px)); aspect-ratio: 1; border-radius: 50%; overflow: hidden; flex: none; }
+.apd-person img { width: 100%; height: 100%; object-fit: cover; display: block; }
+/* Colour seen in a photo: the photo's main colours as their nearest DS tokens, small and quiet. */
+.apd-swatches { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: var(--t-cap); line-height: var(--lh-cap); color: var(--text-secondary); }
+.apd-swatches span { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.apd-swatches i { width: 12px; height: 12px; border-radius: 3px; box-shadow: inset 0 0 0 1px rgba(10,10,10,.08); flex: none; }
+.apd[data-format="slide"] .apd-swatches i { width: 24px; height: 24px; border-radius: 6px; }
+
+/* ---------- story pieces (references/STYLE.md): moods, bento, statement, journey ---------- */
+/* A mood is a page's whole palette: a ground (60–70 %), support tints (20–30 %), an accent (5–10 %) and its echo.
+   Light moods turn dark with the screen theme (light-dark() follows color-scheme) and print light; ink stays dark. */
+[data-mood] { --sunken: var(--tint-2); }
+[data-mood="paper"] { --page: light-dark(#fbf9f5, #171513); --tint-1: light-dark(#ffffff, #201e1a); --tint-2: light-dark(#efe9e4, #2a2925); --line: light-dark(#ddd5cf, #2a2925);
+  --text-primary: light-dark(#0a0a0a, #ffffff); --text-body: light-dark(#3f3d3c, #d4d3cf); --text-secondary: light-dark(#6c6865, #918f8b); --mark: light-dark(#0a0a0a, #ffffff); --mark-on: light-dark(#ffffff, #0a0a0a);
+  --accent-ink: light-dark(#b54a46, #f1a8a2); --chart-grid: light-dark(#efe8e3, #24211e); --chart-quiet: light-dark(#c4bcb5, #4b433d); --chart-axis: light-dark(#c4bcb5, #4b433d); --lk-knob: light-dark(#f8f2ed, #1c1c1c); }
+[data-mood="linen"] { --page: light-dark(#f8f2ed, #1e1614); --tint-1: light-dark(#fbf9f5, #2a2113); --tint-2: light-dark(#f4e8d9, #3a2c18); --line: light-dark(#e9d3b8, #3a2c18);
+  --text-primary: light-dark(#0a0a0a, #ffffff); --text-body: light-dark(#3f3d3c, #e9d3b8); --text-secondary: light-dark(#6c6865, #b9b1a8); --mark: light-dark(#0a0a0a, #ffffff); --mark-on: light-dark(#ffffff, #0a0a0a);
+  --accent-ink: light-dark(#b54a46, #f1a8a2); --chart-grid: light-dark(#efe9e4, #2a2113); --chart-quiet: light-dark(#d3ccc3, #5f3d04); --chart-axis: light-dark(#d3ccc3, #5f3d04); --lk-knob: light-dark(#f8f2ed, #1c1c1c); }
+[data-mood="fjord"] { --page: light-dark(#e0ecf3, #0d222c); --tint-1: light-dark(#f1f7fa, #173443); --tint-2: light-dark(#c5dbe6, #254a5d); --line: light-dark(#c5dbe6, #254a5d);
+  --text-primary: light-dark(#0d222c, #ffffff); --text-body: light-dark(#254a5d, #c5dbe6); --text-secondary: light-dark(#336178, #7eaac2); --mark: light-dark(#0d222c, #ffffff); --mark-on: light-dark(#ffffff, #0d222c);
+  --accent-ink: light-dark(#953835, #f1a8a2); --chart-grid: light-dark(#c5dbe6, #173443); --chart-quiet: light-dark(#a3c3d5, #336178); --chart-axis: light-dark(#a3c3d5, #336178); --link: light-dark(#254a5d, #a3c3d5); --lk-knob: light-dark(#f8f2ed, #1c1c1c); }
+[data-mood="sage"] { --page: light-dark(#e5ece2, #182311); --tint-1: light-dark(#f3f7f2, #26361d); --tint-2: light-dark(#cfdcc8, #384c2c); --line: light-dark(#cfdcc8, #384c2c);
+  --text-primary: light-dark(#182311, #ffffff); --text-body: light-dark(#384c2c, #cfdcc8); --text-secondary: light-dark(#4a633c, #92ac85); --mark: light-dark(#182311, #ffffff); --mark-on: light-dark(#ffffff, #182311);
+  --accent-ink: light-dark(#953835, #f1a8a2); --chart-grid: light-dark(#cfdcc8, #26361d); --chart-quiet: light-dark(#b1c5a7, #4a633c); --chart-axis: light-dark(#b1c5a7, #4a633c); --link: light-dark(#384c2c, #b1c5a7); --lk-knob: light-dark(#f8f2ed, #1c1c1c); }
+[data-mood="ink"], .b.is-ink { --page: #0f0e0d; --tint-1: #1c1a17; --tint-2: #2a2925; --sunken: #2a2925; --line: rgba(255,255,255,.12); --line-strong: #797068;
+  --text-primary: #ffffff; --text-body: #d4d3cf; --text-secondary: #a19b95; --mark: #ffffff; --mark-on: #0a0a0a; --link: #a3c3d5; --accent-ink: #f1a8a2;
+  --chart-grid: rgba(255,255,255,.07); --chart-quiet: #4b433d; --chart-axis: #4b433d; --data-1: #409ac5; --data-2: #bf8532; --data-3: #b36b95; --data-4: #638e4c; --lk-knob: #1c1c1c; color-scheme: dark; }
+
+/* Bento: one idea per card, mixed media, one accent card per grid (STYLE.md § 3). Cards use the mood's tints. */
+.apd-bento { display: grid; grid-template-columns: repeat(var(--cols, 4), minmax(0, 1fr)); grid-auto-rows: minmax(0, 1fr); gap: var(--bento-gap, 12px); min-height: 0; }
+.apd[data-format="slide"] .apd-bento { --bento-gap: 24px; }
+.apd-bento > .b { position: relative; overflow: hidden; border-radius: var(--b-r, 16px); background: var(--tint-1, var(--sunken)); padding: var(--b-p, 18px);
+  display: flex; flex-direction: column; gap: var(--b-g, 6px); min-width: 0; min-height: 0; color: var(--text-body); }
+.apd[data-format="slide"] .apd-bento > .b { --b-r: 28px; --b-p: 36px; --b-g: 12px; }
+.b.w2 { grid-column: span 2; } .b.w3 { grid-column: span 3; } .b.w4 { grid-column: span 4; }
+.b.h2 { grid-row: span 2; } .b.h3 { grid-row: span 3; }
+.b.is-tint { background: var(--tint-2); }
+.b.is-line { background: transparent; box-shadow: inset 0 0 0 1px var(--line); }
+/* Accent card (BRIEF § 8, decisions 9–10): on light pages red brings its own light (the lit card); on ink and Ember the
+   coral box with ink text works because the black is the page itself. */
+.b.is-accent { color: var(--text-body); --text-primary: #ffffff; --text-body: #fff2f1; --text-secondary: #fee2e0; --mark: #ffffff; position: relative; overflow: hidden; isolation: isolate;
+  background: linear-gradient(200deg in oklab, #b54a46 0%, #953835 26%, #732926 52%, #541a19 76%, #4f1a18 100%); }
+/* The light sits on ::before at a whole-pixel size, as in .apd-lit: an alpha radial stacked on a gradient prints with a dark
+   corner in Preview (craft QA r5). */
+.b.is-accent::before { content: ""; position: absolute; z-index: -1; pointer-events: none; left: 10%; top: -80%;
+  width: 180%; height: 160%; width: calc(round(calc(180% * var(--pz, 1)), 1px) / var(--pz, 1)); height: calc(round(calc(160% * var(--pz, 1)), 1px) / var(--pz, 1));
+  background: radial-gradient(closest-side in oklab, rgb(223 105 92 / .95), rgb(223 105 92 / .7) 24%, rgb(223 105 92 / .32) 48%, rgb(223 105 92 / .1) 70%, rgb(223 105 92 / 0)); }
+.b.is-accent.is-coral, :is([data-mood="ink"], .on-ember) .b.is-accent { color: var(--text-body); --text-primary: #0a0a0a; --text-body: #2a1513; --text-secondary: #541a19; --mark: #0a0a0a;
+  background: linear-gradient(160deg in oklab, #df7f78 0%, #df7f78 38%, #df695c 100%); }
+.b.is-accent.is-coral::before, :is([data-mood="ink"], .on-ember) .b.is-accent::before { left: -80%; top: -90%; width: 160%; height: 180%;
+  width: calc(round(calc(160% * var(--pz, 1)), 1px) / var(--pz, 1)); height: calc(round(calc(180% * var(--pz, 1)), 1px) / var(--pz, 1));
+  background: radial-gradient(closest-side in oklab, rgb(234 171 165 / .9), rgb(234 171 165 / .6) 26%, rgb(234 171 165 / .25) 50%, rgb(234 171 165 / 0)); }
+.b.is-ink { background: var(--page); color: var(--text-body); }
+.b.is-photo { padding: 0; background: var(--tint-2); }
+/* Support tones: neighbouring DS hues, quiet, so other colours join the page without shouting (STYLE.md § 2). */
+.b.tone-fjord { background: light-dark(#e0ecf3, #173443); } .b.tone-sage { background: light-dark(#e5ece2, #26361d); }
+.b.tone-ochre { background: light-dark(#f4e8d9, #3a2c18); } .b.tone-heather { background: light-dark(#f2e6ec, #402735); }
+.b.is-photo > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: var(--focus, 50% 50%); display: block; }
+.b .k { font-size: var(--t-label); line-height: var(--lh-label); font-weight: 600; color: var(--text-secondary); }
+.b .n { font-size: calc(var(--t-big) * var(--nz, .78)); line-height: 1; font-weight: 700; letter-spacing: -.035em; color: var(--text-primary); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.apd[data-format="slide"] .b .n { --nz: .62; }
+.apd[data-format="slide"] .b.is-hero .n { --nz: .9; }
+.b .n small { font-size: .4em; font-weight: 600; letter-spacing: 0; margin-left: .12em; color: var(--text-secondary); }
+.b.is-hero .n { --nz: 1.15; }
+.b .t { font-size: var(--t-h); line-height: var(--lh-h); font-weight: 600; letter-spacing: -.01em; color: var(--text-primary); text-wrap: balance; }
+.b .s { font-size: var(--t-label); line-height: var(--lh-label); color: var(--text-body); text-wrap: pretty; }
+.b .end { margin-top: auto; display: flex; flex-direction: column; gap: var(--b-g, 6px); }
+.b .apd-spot { width: var(--spot, 64px); height: auto; display: block; }
+.apd[data-format="slide"] .b .apd-spot { --spot: 176px; margin: -12px 0 0 -12px; }
+.b .apd-glass { left: var(--b-p, 18px); bottom: var(--b-p, 18px); right: auto; }
+.b .apd-glass .n { color: #ffffff; font-size: calc(var(--t-big) * .7); }
+.b .apd-glass .n small { color: rgba(255,255,255,.72); }
+.b .people { display: flex; }
+.b .people .apd-person { box-shadow: 0 0 0 3px var(--tint-1, var(--page)); }
+.b .people .apd-person + .apd-person { margin-left: calc(var(--avatar-size, var(--size, 56px)) * -.22); }
+
+/* The accent and its echo: the same colour on one number, one marker or one word, never more than three places. */
+.apd-accent { color: var(--accent-ink); }
+.apd-echo { display: inline-block; width: .5em; height: .5em; border-radius: 50%; background: var(--accent); vertical-align: .12em; margin-right: .35em; }
+
+/* Statement: one sentence large (≤ 14 words), a voice line, nothing else but its source. */
+.apd-statement { font-size: calc(var(--t-cover) * .86); line-height: 1.06; font-weight: 700; letter-spacing: -.035em; color: var(--text-primary); max-width: 13em; text-wrap: balance; }
+.apd-statement em { font-style: normal; color: var(--accent-ink); }
+.apd-kicker { font-size: var(--t-label); line-height: var(--lh-label); font-weight: 600; color: var(--text-secondary); }
+
+/* Notes: short lines a person wrote down, on a ruled block. */
+.apd-notes-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; }
+.apd-notes-list li { padding: 8px 0 8px 22px; border-bottom: 1px solid var(--line); position: relative; color: var(--text-body); }
+.apd-notes-list li::before { content: ""; position: absolute; left: 2px; top: calc(8px + var(--lh-body) / 2 - 4px); width: 8px; height: 8px; border-radius: 2px; background: var(--chart-quiet); transform: rotate(45deg); }
+.apd-notes-list li.is-key::before { background: var(--mark); } /* ink, not coral: red on light pages is the lit card only (§ 11.1) */
+.apd-notes-list li.is-blank { height: var(--lh-body); }
+.apd-notes-list li.is-blank::before { display: none; }
+
+/* Cover */
+.apd-cover { flex: 1; display: flex; flex-direction: column; justify-content: space-between; gap: var(--gap); }
+.apd-cover .apd-lockup { height: 30px; width: auto; aspect-ratio: 1746.4 / 217.5; align-self: flex-start; color: var(--text-primary); }
+.apd[data-format="slide"] .apd-cover .apd-lockup { height: 56px; }
+.apd-cover h1 { font-size: var(--t-cover); line-height: var(--lh-cover); font-weight: 700; letter-spacing: -.03em; color: var(--text-primary); text-wrap: balance; max-width: 12em; }
+.apd-cover .apd-voice { margin-top: 14px; }
+.apd-cover .apd-meta { display: flex; flex-wrap: wrap; gap: 6px 20px; }
+
+/* ---------- screen toolbar (never printed) ---------- */
+.apd-bar { position: fixed; z-index: 20; top: calc(10px + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 4px; padding: 4px; border-radius: var(--radius-pill); background: color-mix(in oklab, var(--page) 88%, transparent);
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); box-shadow: 0 4px 12px -2px rgba(23,21,19,.12), 0 0 0 1px var(--line); font-size: 12px; max-width: calc(100vw - 32px); overflow-x: auto; }
+.apd-bar button, .apd-bar select { font: inherit; font-size: 12px; font-weight: 500; color: var(--text-primary); background: transparent; border: 0; border-radius: var(--radius-pill); padding: 6px 10px; cursor: pointer; white-space: nowrap; }
+.apd-bar button[aria-pressed="true"] { background: var(--text-primary); color: var(--page); }
+.apd-bar button:focus-visible, .apd-bar select:focus-visible { outline: 2px solid var(--link); outline-offset: 1px; }
+.apd-bar .sep { width: 1px; height: 18px; background: var(--line); margin: 0 2px; flex: none; }
+.apd-bar .note { color: var(--text-secondary); padding: 0 8px; white-space: nowrap; }
+.apd-bar a.back { font-size: 12px; font-weight: 600; color: var(--text-primary); text-decoration: none; padding: 6px 10px; border-radius: var(--radius-pill); white-space: nowrap; }
+.apd-bar a.back:hover { background: var(--sunken); }
+.apd-bar a.back:focus-visible { outline: 2px solid var(--link); outline-offset: 1px; }
+
+/* deck mode: one slide at a time on screen */
+.apd.is-deck { height: 100vh; padding: 0; justify-content: center; overflow: hidden; }
+.apd.is-deck .apd-page { display: none; }
+.apd.is-deck .apd-page.is-current { display: flex; }
+.apd-notes, aside.notes { display: none; }
+
+@media (prefers-reduced-motion: reduce) { .apd-tip { transition: none; } }
+
+/* ---------- print: light, exact, one page per box ---------- */
+@media print {
+  /* Preview prints blurred box-shadows as solid grey slabs (craft QA r5): DS shadow tokens print as hairline edges. */
+  .apd, .apd * { --shadow-1: 0 0 0 1px var(--line) !important; --shadow-2: 0 0 0 1px var(--line) !important; --shadow-3: 0 0 0 1px var(--line) !important; --shadow-4: 0 0 0 1px var(--line) !important; }
+  :root, :root:not([data-theme="x"]), :root[data-theme] {  /* as specific as the dark rules, and later, so paper is always light */
+    --canvas: #ffffff; --page: #ffffff; --sunken: #efe8e3; --line: #ddd5cf; --line-strong: #918880;
+    --text-primary: #0a0a0a; --text-body: #3f3d3c; --text-secondary: #6c6865; --link: #336178; --mark: #0a0a0a; --mark-on: #ffffff; --lk-knob: #f8f2ed; --accent-ink: #b54a46;
+    --needs-you: #b54a46; --needs-you-bg: #fff2f1; --waiting: #7c5004; --waiting-bg: #f4e8d9; --done: #4a633c; --done-bg: #e5ece2; --info: #336178; --info-bg: #e0ecf3;
+    --chart-quiet: #c4bcb5; --chart-grid: #efe8e3; --chart-axis: #c4bcb5;
+    --data-1: #1178a1; --data-2: #cc9140; --data-3: #8d4871; --data-4: #699552;
+    --seq-1: #e0ecf3; --seq-2: #c5dbe6; --seq-3: #a3c3d5; --seq-4: #7eaac2; --seq-5: #5f91ab; --seq-6: #447994; --seq-7: #336178; --seq-8: #254a5d;
+    --div-neg: #b17f3b; --div-mid: #efe8e3; --div-pos: #447994; --ord-1: #aaa19a; --ord-2: #797068; --ord-3: #4b433d; --ord-4: #0a0a0a;
+    color-scheme: light;
+  }
+  html, body { background: #fff; }
+  .apd, .apd.is-deck { display: block; padding: 0; gap: 0; height: auto; overflow: visible; }
+  .apd-page, .apd.is-deck .apd-page { display: flex; zoom: var(--pz); box-shadow: none; margin: 0; break-after: page; page-break-after: always; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .apd-page:last-child { break-after: auto; page-break-after: auto; }
+  .apd-bar, .apd-tablebtn, .apd-tip, .apd-screen { display: none !important; }
+}

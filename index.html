@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="nb">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>Autoproperty Investorpresentasjon</title>
+<style>
+  /* The root of the link: the logo, the deck's name in both languages and the two presentations. One look (ink, the
+     cover's warm glow), as the cover. Tokens from the Autoproperty design system. */
+  @font-face { font-family: "Inter AP"; font-weight: 400; src: url(kit/fonts/inter-400.woff) format("woff"); font-display: swap; }
+  @font-face { font-family: "Inter AP"; font-weight: 600; src: url(kit/fonts/inter-600.woff) format("woff"); font-display: swap; }
+  @font-face { font-family: "Inter AP"; font-weight: 700; src: url(kit/fonts/inter-700.woff) format("woff"); font-display: swap; }
+  :root { color-scheme: dark; --ink: #0f0e0d; --text: #ffffff; --body: #d4d3cf; --meta: #918f8b; --line: rgba(255,255,255,.16);
+    --surface: rgba(255,255,255,.06); --hover: rgba(255,255,255,.12); --glow: rgba(241,194,125,.22); }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body { margin: 0; background: var(--ink); color: var(--body); font-family: "Inter AP", Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    -webkit-font-smoothing: antialiased; }
+  main { min-height: 100%; display: grid; place-items: center; padding-block: max(48px, env(safe-area-inset-top, 0px)) max(48px, env(safe-area-inset-bottom, 0px));
+    padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+    background: radial-gradient(60% 55% at 72% 46%, var(--glow), transparent 70%); }
+  .box { width: min(560px, 100%); display: flex; flex-direction: column; gap: 32px; }
+  .logo { width: min(280px, 70%); height: auto; display: block; }
+  h1 { margin: 0; font-size: clamp(28px, 5vw, 40px); line-height: 1.15; font-weight: 700; letter-spacing: -.02em; color: var(--text); text-wrap: balance; }
+  h1 span { display: block; color: var(--meta); font-weight: 400; }
+  nav { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  a { display: flex; flex-direction: column; gap: 2px; padding: 16px 20px; border-radius: 12px; background: var(--surface);
+    box-shadow: inset 0 0 0 1px var(--line); color: var(--text); text-decoration: none; transition: background-color 120ms ease-out; }
+  a:hover { background: var(--hover); }
+  a:active { transform: scale(.98); }
+  a:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+  a b { font-size: 18px; line-height: 24px; font-weight: 600; }
+  a span { font-size: 14px; line-height: 20px; color: var(--meta); }
+  @media (max-width: 420px) { nav { grid-template-columns: 1fr; } }
+  @media (prefers-reduced-motion: reduce) { a { transition: none; } a:active { transform: none; } }
+</style>
+<main>
+  <div class="box">
+    <img class="logo" src="lockup-on-dark.svg" alt="Autoproperty" width="1746" height="218">
+    <h1>Investorpresentasjon<span lang="en">Investor presentation</span></h1>
+    <nav aria-label="Språk / Language">
+      <a href="no/" lang="nb"><b>Norsk</b><span>Presentasjonen på norsk</span></a>
+      <a href="en/" lang="en"><b>English</b><span>The presentation in English</span></a>
+    </nav>
+  </div>
+</main>
+</html>

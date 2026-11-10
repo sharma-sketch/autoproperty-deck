@@ -1,0 +1,385 @@
+/* Autoproperty documents · lines: the line kit's scenes and the hairline system (lines agent, 1 Nov 2026).
+   Load after ap-doc.css. Parts are registered in kit/parts/lines.json; the lab is lab/lines.html.
+   - Scenes: static SVGs in kit/scenes (rendered by tools/render-scenes.mjs from the DS line kit), shown in
+     .apd-scene with a label layer placed by % coordinates from the scene's JSON (projected points).
+   - Hairlines: 1 px, never blurred, on both themes: orbit rings, dashed guides, leaders with a ringed dot, corner
+     ticks, the chapter rail, a faint grid ground, a labelled divider.
+   - Story compositions: the chapter (scene, time, one sentence, one line, a glass UI fragment, the rail) and the
+     storyboard (small scenes in sequence with times).
+   Colours are DS tokens only (tokens.css): ink #0a0a0a, white, Bryggen red #b54a46, coral #df7f78, moss-700
+   #4a633c, moss-300 #b1c5a7, ember-tile #201e1a, linen #f8f2ed. The line kit is built on the hairline kernel
+   (MIT License, © 2026 Lucas Marques). */
+
+/* ---------- tokens: light (paper, linen, Haze) by default ----------
+   Three strengths (WCAG 1.4.11: graphics needed to understand the page at 3 : 1; decoration may be quieter):
+   --ln-strong  lines that carry meaning: leaders, the ringed dot, the storyboard's time line, guides that point
+                at something. 3,6 : 1 on linen #f8f2ed, 3,7 : 1 on white; 4,4 : 1 on ink #0a0a0a and night #171513.
+   --ln         structure: orbit rings, rail ticks, dividers, corner ticks. 2,0 : 1 on linen; 2,4 : 1 on ink.
+   --ln-lo      quiet structure: dashed orbits and guides that point at nothing. 1,6 : 1 on linen and on ink.
+   --ln-grid    ground texture only, never structure: 1,2 : 1.
+   The ink of a dot or the current tick is --ln-ink, falling back to the region's own --text-primary (it is read where
+   it is used, so an Ember page inside a light document still gets white). */
+.apd {
+  --ln-strong: rgba(10, 10, 10, .50); --ln: rgba(10, 10, 10, .30); --ln-lo: rgba(10, 10, 10, .22); --ln-grid: rgba(10, 10, 10, .13);
+  --ln-hi: #b54a46; --ln-ok: #4a633c; --ln-cold: initial; --ln-chip: #ffffff;
+  --ln-glass-solid: linear-gradient(180deg in oklab, #ffffff, #fbf9f5); --ln-glass-print: linear-gradient(180deg in oklab, #ffffff, #fbf9f5); --ln-glass-bg: linear-gradient(180deg in oklab, #ffffff, #fbf9f5); --ln-blur: 0px;
+  --ln-glass-edge: rgba(10, 10, 10, .10); --ln-glass-shadow: 0 4px 12px -2px rgba(23, 21, 19, .10), 0 2px 4px rgba(23, 21, 19, .05);
+  /* sizes at A4 design units (labels ≥ 10,5 px there, ≥ 20 px on a slide); slides below */
+  --ln-dash: 4px; --ln-gap: 5px; --ln-dot: 6px; --ln-ring: 16px; --ln-tick: 12px; --ln-cell: 32px; --ln-step: 8px; --ln-label: 10.5px;
+}
+/* spacing steps from the DS scale: the slide value in the name, half of it at A4 design size */
+.apd { --ln-s8: 4px; --ln-s12: 6px; --ln-s16: 8px; --ln-s20: 10px; --ln-s24: 12px; --ln-s48: 24px; --ln-s64: 32px; --ln-rail-right: 24px; }
+.apd[data-format="slide"] { --ln-s8: 8px; --ln-s12: 12px; --ln-s16: 16px; --ln-s20: 20px; --ln-s24: 24px; --ln-s48: 48px; --ln-s64: 64px; --ln-rail-right: 40px; }
+.apd[data-format="slide"] { --ln-dash: 6px; --ln-gap: 8px; --ln-dot: 10px; --ln-ring: 28px; --ln-tick: 28px; --ln-cell: 64px; --ln-step: 14px; --ln-label: 20px; }
+.apd[data-format="card"] { --ln-dot: 8px; --ln-ring: 20px; --ln-tick: 18px; --ln-cell: 40px; --ln-step: 10px; --ln-label: 12px; }
+
+/* Glass (BRIEF § 8.5, DS 02): dark = the DS recipe, white 16 % → 4 % with an 18 px blur, only over a photo, a scene with
+   content under it, or an Ember / ink-glow ground; light = a solid card (white → paper, DS shadow-2), never blurred,
+   because on a light canvas glass has nothing to show. Print and .is-solid use --ln-glass-solid. */
+/* dark: the screen theme, and every dark ground (Ember, ink, the grounds module's night grounds) in any theme and print */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .apd {
+    --ln-strong: rgba(255, 255, 255, .44); --ln: rgba(255, 255, 255, .28); --ln-lo: rgba(255, 255, 255, .18); --ln-grid: rgba(255, 255, 255, .10);
+  --ln-hi: #df7f78; --ln-ok: #b1c5a7; --ln-cold: #df7f78; --ln-chip: #201e1a;
+  --ln-glass-solid: linear-gradient(180deg in oklab, #2a2925, #171513); --ln-glass-print: linear-gradient(180deg in oklab, #2a2925, #171513); --ln-glass-bg: linear-gradient(180deg in oklab, rgba(255, 255, 255, .16), rgba(255, 255, 255, .04)); --ln-blur: 18px;
+  --ln-glass-edge: rgba(255, 255, 255, .14); --ln-glass-shadow: 0 16px 40px -12px rgba(0, 0, 0, .6), 0 4px 10px rgba(0, 0, 0, .3);
+  }
+}
+:root[data-theme="dark"] .apd, .apd .on-ember, .apd .apd-page.on-ember, .apd [data-mood="ink"], .apd .ln-dark,
+.apd .on-ink-glow, .apd .on-ember-dawn, .apd .on-fjord-night, .apd .on-moss-dusk, .apd .on-ochre-lamplight, .apd .on-heather-evening, .apd .on-fjord-streak, .apd .on-arctic, .apd .on-jade {
+  --ln-strong: rgba(255, 255, 255, .44); --ln: rgba(255, 255, 255, .28); --ln-lo: rgba(255, 255, 255, .18); --ln-grid: rgba(255, 255, 255, .10);
+  --ln-hi: #df7f78; --ln-ok: #b1c5a7; --ln-cold: #df7f78; --ln-chip: #201e1a;
+  --ln-glass-solid: linear-gradient(180deg in oklab, #2a2925, #171513); --ln-glass-print: linear-gradient(180deg in oklab, #2a2925, #171513); --ln-glass-bg: linear-gradient(180deg in oklab, rgba(255, 255, 255, .16), rgba(255, 255, 255, .04)); --ln-blur: 18px;
+  --ln-glass-edge: rgba(255, 255, 255, .14); --ln-glass-shadow: 0 16px 40px -12px rgba(0, 0, 0, .6), 0 4px 10px rgba(0, 0, 0, .3);
+}
+/* light: Haze, the grounds module's light grounds, a pinned light region */
+.apd .on-haze, .apd .ln-light, .apd .on-fjord-mist, .apd .on-moss-morning, .apd .on-ochre-linen, .apd .on-heather-blush, .apd .on-mesh {
+  --ln-strong: rgba(10, 10, 10, .50); --ln: rgba(10, 10, 10, .30); --ln-lo: rgba(10, 10, 10, .22); --ln-grid: rgba(10, 10, 10, .13);
+  --ln-hi: #b54a46; --ln-ok: #4a633c; --ln-cold: initial; --ln-chip: #ffffff;
+  --ln-glass-solid: linear-gradient(180deg in oklab, #ffffff, #fbf9f5); --ln-glass-print: linear-gradient(180deg in oklab, #ffffff, #fbf9f5); --ln-glass-bg: linear-gradient(180deg in oklab, #ffffff, #fbf9f5); --ln-blur: 0px;
+  --ln-glass-edge: rgba(10, 10, 10, .10); --ln-glass-shadow: 0 4px 12px -2px rgba(23, 21, 19, .10), 0 2px 4px rgba(23, 21, 19, .05);
+}
+/* paper is light: in print the theme-following pages take the light inks (dark grounds keep theirs) */
+@media print {
+  :root:not([data-theme="x"]) .apd {
+    --ln-strong: rgba(10, 10, 10, .50); --ln: rgba(10, 10, 10, .30); --ln-lo: rgba(10, 10, 10, .22); --ln-grid: rgba(10, 10, 10, .13);
+  --ln-hi: #b54a46; --ln-ok: #4a633c; --ln-cold: initial; --ln-chip: #ffffff;
+  --ln-glass-solid: linear-gradient(180deg in oklab, #ffffff, #fbf9f5); --ln-glass-print: linear-gradient(180deg in oklab, #ffffff, #fbf9f5); --ln-glass-bg: linear-gradient(180deg in oklab, #ffffff, #fbf9f5); --ln-blur: 0px;
+  --ln-glass-edge: rgba(10, 10, 10, .10); --ln-glass-shadow: 0 4px 12px -2px rgba(23, 21, 19, .10), 0 2px 4px rgba(23, 21, 19, .05);
+  }
+}
+/* .ln-dark / .ln-light pin a region's palette (a split slide's halves); they set ap-doc's text roles too, and name the
+   region's ground (--ln-ground: ink / linen; --ln-paper on light) so a pinned pane or island paints it without a literal */
+.apd .ln-dark { --text-primary: #ffffff; --text-body: #efe9e4; --text-secondary: rgba(255, 255, 255, .66); --line: rgba(255, 255, 255, .18); --sunken: #24211e; --waiting: #dab78e; --waiting-bg: #2a2113; --accent-ink: #f1a8a2; --ln-ground: #0a0a0a; color: var(--text-body); color-scheme: dark; }
+.apd .ln-light { --text-primary: #0a0a0a; --text-body: #3f3d3c; --text-secondary: #6c6865; --line: rgba(10, 10, 10, .12); --sunken: #efe8e3; --waiting: #7c5004; --waiting-bg: #f4e8d9; --accent-ink: #b54a46; --lk-knob: #f8f2ed; --ln-ground: #f8f2ed; --ln-paper: #fbf9f5; color: var(--text-body); color-scheme: light; }
+
+/* ---------- 1 · the scene frame: an image of a line scene and a layer for labels at % points ----------
+   <figure class="apd-scene" style="--scene-ar: 1160 / 977">
+     <img class="for-light" src="../kit/scenes/room-cold-light.svg" alt="…"><img class="for-dark" src="../kit/scenes/room-cold-dark.svg" alt="…">
+     <div class="apd-scene__layer"><span class="apd-pin" style="--ln-x: 61.32%; --ln-y: 44.9%"></span></div>
+   </figure>
+   --scene-ar and the points come from the scene's JSON. The frame keeps the image's ratio, so % points land exactly. */
+.apd-scene { position: relative; margin: 0; width: 100%; aspect-ratio: var(--scene-ar, 16 / 10); flex: none; }
+.apd-scene.is-tall { width: auto; height: 100%; max-width: 100%; }
+.apd-scene > img { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.apd-scene__layer { position: absolute; inset: 0; pointer-events: none; }
+.apd-scene__layer > * { position: absolute; left: var(--ln-x, 50%); top: var(--ln-y, 50%); }
+/* the image follows the theme; a ground pins it (Ember, ink and the night grounds dark; Haze and the light grounds
+   light); paper prints light */
+/* Themed images: any pair of <img class="for-light"> / <img class="for-dark"> (a scene, a storyboard frame, a spot) shows
+   the one that matches. The screen theme decides; a dark ground (Ember, ink, the night grounds) pins dark, a light
+   ground (Haze, mist, morning, linen, blush, mesh) pins light; paper prints light unless the page is a dark ground. */
+.apd img.for-dark { display: none; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .apd img.for-dark { display: block; }
+  :root:not([data-theme="light"]) .apd img.for-light { display: none; }
+}
+:root[data-theme="dark"] .apd img.for-dark { display: block; }
+:root[data-theme="dark"] .apd img.for-light { display: none; }
+@media print {
+  :root:not([data-theme="x"]) .apd img.for-dark { display: none; }
+  :root:not([data-theme="x"]) .apd img.for-light { display: block; }
+}
+.on-ember img.for-dark, [data-mood="ink"] img.for-dark, .ln-dark img.for-dark, .on-ink-glow img.for-dark, .on-ember-dawn img.for-dark, .on-fjord-night img.for-dark, .on-moss-dusk img.for-dark, .on-ochre-lamplight img.for-dark, .on-heather-evening img.for-dark, .on-fjord-streak img.for-dark, .on-arctic img.for-dark, .on-jade img.for-dark { display: block !important; }
+.on-ember img.for-light, [data-mood="ink"] img.for-light, .ln-dark img.for-light, .on-ink-glow img.for-light, .on-ember-dawn img.for-light, .on-fjord-night img.for-light, .on-moss-dusk img.for-light, .on-ochre-lamplight img.for-light, .on-heather-evening img.for-light, .on-fjord-streak img.for-light, .on-arctic img.for-light, .on-jade img.for-light { display: none !important; }
+.on-haze img.for-light, .ln-light img.for-light, .on-fjord-mist img.for-light, .on-moss-morning img.for-light, .on-ochre-linen img.for-light, .on-heather-blush img.for-light, .on-mesh img.for-light { display: block !important; }
+.on-haze img.for-dark, .ln-light img.for-dark, .on-fjord-mist img.for-dark, .on-moss-morning img.for-dark, .on-ochre-linen img.for-dark, .on-heather-blush img.for-dark, .on-mesh img.for-dark { display: none !important; }
+.apd-scene-cap { display: flex; align-items: center; gap: var(--ln-s12, 6px); font-size: var(--t-cap); line-height: var(--lh-cap); color: var(--text-secondary); }
+.apd-scene-cap::before { content: ""; width: var(--ln-tick); height: 1px; background: var(--ln); flex: none; }
+.apd-scene-cap b { color: var(--text-primary); font-weight: 600; }
+
+/* ---------- 2 · the ringed dot (a point in a scene) ---------- */
+/* The ring sits on a disc of the page colour with a 2 px knock-out, so the dot keeps its contrast over a photo, a
+   glow or a crossing line (the highlight's red ring stays; its dot is ink). */
+.apd-pin { width: var(--ln-ring); height: var(--ln-ring); border-radius: 50%; transform: translate(-50%, -50%);
+  box-shadow: inset 0 0 0 1px var(--ln-c, var(--ln-strong)), 0 0 0 2px var(--ln-knock, var(--page));
+  background: radial-gradient(circle, var(--ln-d, var(--ln-ink, var(--text-primary))) 0 calc(var(--ln-dot) / 2 - .5px), transparent calc(var(--ln-dot) / 2 + .5px)), var(--ln-knock, var(--page)); }
+.apd-pin.is-hi, .apd-leader.is-hi { --ln-c: var(--ln-hi); }
+.apd-pin.is-halo::after { content: ""; position: absolute; inset: calc(var(--ln-ring) * -.5); border-radius: 50%; box-shadow: inset 0 0 0 1px var(--ln-lo); }
+
+/* ---------- 3 · the leader: a ringed dot at the point, a 1 px elbow (up, then across), the label at its end ----------
+   <div class="apd-leader" style="--ln-x: 61%; --ln-y: 45%; --leader-rise: 160px; --leader-run: 120px"><span>Heater off</span></div>
+   .to-left runs left; .to-down drops; --leader-rise: 0 gives a straight horizontal leader. Axis-aligned, so never blurred. */
+.apd-leader { --leader-rise: 64px; --leader-run: 64px; width: var(--ln-ring); height: var(--ln-ring); border-radius: 50%; transform: translate(-50%, -50%);
+  box-shadow: inset 0 0 0 1px var(--ln-c, var(--ln-strong)), 0 0 0 2px var(--ln-knock, var(--page));
+  background: radial-gradient(circle, var(--ln-d, var(--ln-ink, var(--text-primary))) 0 calc(var(--ln-dot) / 2 - .5px), transparent calc(var(--ln-dot) / 2 + .5px)), var(--ln-knock, var(--page)); }
+.apd-leader::before { content: ""; position: absolute; left: calc(50% - .5px); bottom: 100%; width: 1px; height: max(0px, calc(var(--leader-rise) - var(--ln-ring) / 2)); background: var(--ln-c, var(--ln-strong)); }
+.apd-leader::after { content: ""; position: absolute; left: 50%; top: calc(50% - var(--leader-rise)); width: var(--leader-run); height: 1px; background: var(--ln-c, var(--ln-strong)); }
+.apd-leader > * { position: absolute; left: calc(50% + var(--leader-run)); top: calc(50% - var(--leader-rise)); transform: translate(round(calc(var(--ln-ring) / 2), 1px), round(-50%, 1px)); white-space: nowrap; }
+.apd-leader.to-left::after { left: auto; right: 50%; }
+.apd-leader.to-left > * { left: auto; right: calc(50% + var(--leader-run)); transform: translate(round(calc(var(--ln-ring) / -2), 1px), round(-50%, 1px)); }
+.apd-leader.to-down::before { bottom: auto; top: 100%; }
+.apd-leader.to-down::after { top: calc(50% + var(--leader-rise)); }
+.apd-leader.to-down > * { top: calc(50% + var(--leader-rise)); }
+.apd-leader.is-straight::before { display: none; }
+.apd-leader.is-straight::after { left: calc(50% + var(--ln-ring) / 2); width: calc(var(--leader-run) - var(--ln-ring) / 2); top: 50%; }
+.apd-leader.is-straight > * { top: 50%; }
+.apd-leader.is-straight.to-left::after { left: auto; right: calc(50% + var(--ln-ring) / 2); }
+/* a plain label at the end of a leader */
+.apd-leader > .apd-label { font-size: var(--t-label); line-height: var(--lh-label); color: var(--text-primary); font-weight: 500; }
+.apd-leader > .apd-label small { display: block; font-size: var(--t-cap); line-height: var(--lh-cap); color: var(--text-secondary); font-weight: 400; }
+
+/* ---------- 4 · dashed guides ---------- */
+/* tiled, not repeating-linear-gradient: Chromium's PDF output keeps a tiled gradient as vector runs (29 of 29 dashes)
+   and smears a repeating one (QA-craft stage 3, K1) */
+.apd-dash { display: block; height: 1px; width: var(--dash-len, 100%); flex: none;
+  background: linear-gradient(90deg, var(--ln-c, var(--ln-lo)) 0 var(--ln-dash), transparent var(--ln-dash)) 0 0 / calc(var(--ln-dash) + var(--ln-gap)) 100% repeat-x; }
+.apd-dash.is-v { width: 1px; height: var(--dash-len, 100%); background: linear-gradient(var(--ln-c, var(--ln-lo)) 0 var(--ln-dash), transparent var(--ln-dash)) 0 0 / 100% calc(var(--ln-dash) + var(--ln-gap)) repeat-y; }
+.apd-dash.is-strong { --ln-c: var(--ln-strong); }
+.apd-scene__layer > .apd-dash { transform: translateY(-.5px); }
+.apd-scene__layer > .apd-dash.is-v { transform: translateX(-.5px); }
+
+/* ---------- 5 · orbit rings round a focal object (the website's padlock) ----------
+   <div class="apd-orbit is-iso" style="--orbit-size: 760px"><i style="--orbit-r: .62"></i><i style="--orbit-r: .8"></i><i class="is-dashed" style="--orbit-r: 1"></i>
+     <img class="apd-orbit__focus" …><span class="apd-chip" style="--orbit-a: 200deg">Door code ••••</span></div>
+   .is-iso squashes rings to the line kit's camera (k = 0,5: a ground circle seen at 45°), so rings lie on the floor
+   under an iso object. Chips sit on the outer ring at angle --orbit-a (0deg = right, 90deg = front). */
+.apd-orbit { --orbit-size: 480px; --orbit-k: 1; --orbit-cy: 50%; position: relative; width: var(--orbit-size); height: calc(var(--orbit-size) * var(--orbit-k) + var(--orbit-room, 0px)); flex: none; }
+.apd-orbit.is-iso { --orbit-k: .5; }
+.apd-orbit > i { position: absolute; left: 50%; top: var(--orbit-cy); width: calc(var(--orbit-size) * var(--orbit-r, 1)); height: calc(var(--orbit-size) * var(--orbit-r, 1) * var(--orbit-k)); transform: translate(-50%, -50%); border-radius: 50%; box-shadow: inset 0 0 0 1px var(--ln-c, var(--ln)); }
+.apd-orbit > i.is-lo { --ln-c: var(--ln-lo); }
+.apd-orbit > i.is-dashed { box-shadow: none; border: 1px dashed var(--ln-c, var(--ln)); }
+.apd-orbit > i.is-plate { background: var(--ln-chip); box-shadow: inset 0 0 0 1px var(--ln-lo); }
+/* the focal object stands on the rings' centre: --orbit-fy is where its foot sits in its own box (-79 % for a DS spot) */
+.apd-orbit__focus { position: absolute; left: 50%; top: var(--orbit-cy); width: var(--orbit-focus, 50%); transform: translate(var(--orbit-fx, -50%), var(--orbit-fy, -79%)); display: block; z-index: 1; }
+.apd-orbit > .apd-chip { z-index: 2; }
+.apd-orbit > .apd-chip { position: absolute; left: calc(50% + cos(var(--orbit-a, 0deg)) * var(--orbit-size) * var(--orbit-cr, .5)); top: calc(var(--orbit-cy) + sin(var(--orbit-a, 0deg)) * var(--orbit-size) * var(--orbit-cr, .5) * var(--orbit-k)); transform: translate(-50%, -50%); }
+
+/* a solid pill with a hairline: things that belong to the scene (masked codes, names). Not glass. */
+.apd-chip { display: inline-flex; align-items: center; gap: var(--ln-s12, 6px); padding: var(--ln-s8, 4px) var(--ln-s20, 10px); border-radius: 999px; background: var(--ln-chip); box-shadow: inset 0 0 0 1px var(--ln-lo);
+  font-size: var(--t-cap); line-height: var(--lh-cap); color: var(--text-body); white-space: nowrap; font-weight: 500; }
+.apd-chip .i, .apd-tag .i { width: 1.15em; height: 1.15em; flex: none; color: var(--text-secondary); }
+.apd-chip .mask { letter-spacing: .18em; color: var(--text-secondary); font-weight: 700; }
+
+/* ---------- 6 · corner ticks (frame marks) round a box ---------- */
+.apd-ticks { position: absolute; inset: var(--ticks-inset, 0); pointer-events: none; --ticks-c: var(--ln);
+  background:
+    linear-gradient(var(--ticks-c), var(--ticks-c)) top left / var(--ln-tick) 1px, linear-gradient(var(--ticks-c), var(--ticks-c)) top left / 1px var(--ln-tick),
+    linear-gradient(var(--ticks-c), var(--ticks-c)) top right / var(--ln-tick) 1px, linear-gradient(var(--ticks-c), var(--ticks-c)) top right / 1px var(--ln-tick),
+    linear-gradient(var(--ticks-c), var(--ticks-c)) bottom left / var(--ln-tick) 1px, linear-gradient(var(--ticks-c), var(--ticks-c)) bottom left / 1px var(--ln-tick),
+    linear-gradient(var(--ticks-c), var(--ticks-c)) bottom right / var(--ln-tick) 1px, linear-gradient(var(--ticks-c), var(--ticks-c)) bottom right / 1px var(--ln-tick);
+  background-repeat: no-repeat; }
+.apd-ticks.is-lo { --ticks-c: var(--ln-lo); }
+
+/* ---------- 7 · the chapter rail: where this page sits in the story (01–11 on the right edge) ----------
+   <div class="apd-rail" role="img" aria-label="Chapter 4 of 11" style="--rail-n: 11; --rail-at: 4"><b>04</b><i></i><span>11</span></div> */
+.apd-rail { --rail-n: 11; --rail-at: 1; position: absolute; z-index: 2; right: var(--ln-rail-right, 24px); top: 50%; transform: translateY(-50%);
+  display: flex; flex-direction: column; align-items: center; gap: var(--ln-s12, 6px);
+  font-size: var(--ln-label); line-height: 1; font-weight: 600; letter-spacing: .04em; font-variant-numeric: tabular-nums; color: var(--text-secondary); }
+/* ap-doc makes every sibling after a ground relative; the rail stays pinned to the edge */
+.apd-page > .apd-ground ~ .apd-rail:not(.apd-pattern):not(.apd-sample):not(.is-h) { position: absolute; }
+.apd-rail b { color: var(--text-primary); font-weight: 600; }
+/* A rail over a photo carries its own dark backing (no glass: a rail is not a surface people read through); both numerals
+   and the ticks white so they hold 4,5 : 1 on any photo (craft QA final, area story slide 3). */
+.apd-rail.on-photo { padding: 12px 8px; border-radius: 999px; background: rgba(10,10,10,.55); --text-primary: #ffffff; --text-secondary: rgba(255,255,255,.86); --ln-ink: #ffffff; color: rgba(255,255,255,.86); }
+.apd-rail.on-photo span { color: rgba(255,255,255,.86); }
+/* Ticks print crisp: Chromium's PDF output rasterised the old repeating-linear-gradient into a smear. Preferred markup:
+   one <s> per chapter inside <i> (real 1 px boxes, vector in the PDF), the current one <s class="is-at">. An empty <i>
+   still works: a tiled one-step gradient (repeat-y), which prints as separate vector runs, and a solid current tick. */
+.apd-rail i { position: relative; display: block; width: var(--ln-tick); height: calc((var(--rail-n) - 1) * var(--ln-step) + 1px);
+  background: linear-gradient(var(--ln) 0 1px, transparent 1px) center top / 50% var(--ln-step) repeat-y; }
+.apd-rail i::after { content: ""; position: absolute; left: 0; right: 0; top: calc((var(--rail-at) - 1) * var(--ln-step)); height: 1px; background: var(--ln-ink, var(--text-primary)); }
+.apd-rail i:has(> s) { height: auto; background: none; display: flex; flex-direction: column; align-items: center; gap: calc(var(--ln-step) - 1px); }
+.apd-rail i:has(> s)::after { display: none; }
+.apd-rail i > s { display: block; width: 50%; height: 1px; background: var(--ln); text-decoration: none; }
+.apd-rail i > s.is-at { width: 100%; background: var(--ln-ink, var(--text-primary)); }
+.apd-rail.on-photo i > s { background: rgba(255,255,255,.6); } .apd-rail.on-photo i > s.is-at { background: #ffffff; }
+.apd-rail.is-h { position: static; transform: none; flex-direction: row; }
+.apd-rail.is-h i { width: calc((var(--rail-n) - 1) * var(--ln-step) + 1px); height: var(--ln-tick);
+  background: linear-gradient(90deg, var(--ln) 0 1px, transparent 1px) left center / var(--ln-step) 50% repeat-x; }
+.apd-rail.is-h i::after { left: calc((var(--rail-at) - 1) * var(--ln-step)); right: auto; top: 0; bottom: 0; width: 1px; height: auto; }
+.apd-rail.is-h i:has(> s) { width: auto; height: var(--ln-tick); flex-direction: row; }
+.apd-rail.is-h i > s { width: 1px; height: 50%; }
+.apd-rail.is-h i > s.is-at { width: 1px; height: 100%; }
+
+/* ---------- 8 · the hairline grid ground: very faint texture under a scene or an opener; never under text to read ---------- */
+.apd-gridlines { position: absolute; inset: 0; pointer-events: none;
+  background-image: linear-gradient(90deg, var(--ln-grid) 1px, transparent 1px), linear-gradient(180deg, var(--ln-grid) 1px, transparent 1px);
+  background-size: var(--ln-cell) var(--ln-cell); background-position: var(--grid-pos, center);
+  -webkit-mask-image: radial-gradient(ellipse 62% 66% at var(--grid-fade, 50% 50%), #000 30%, transparent 100%);
+  mask-image: radial-gradient(ellipse 62% 66% at var(--grid-fade, 50% 50%), #000 30%, transparent 100%); }
+/* the iso grid: lines at the camera's slopes (±1:2), the floor the scenes stand on */
+.apd-gridlines.is-iso { background-image:
+    repeating-linear-gradient(26.565deg, var(--ln-grid) 0 1px, transparent 1px var(--ln-cell)),
+    repeating-linear-gradient(-26.565deg, var(--ln-grid) 0 1px, transparent 1px var(--ln-cell));
+  background-size: auto; }
+
+/* ---------- 9 · a hairline divider with a label (ap-doc's .apd-rule stays the plain <hr>) ---------- */
+.apd-divider { display: flex; align-items: center; gap: var(--ln-s16, 8px); font-size: var(--t-label); line-height: var(--lh-label); color: var(--text-secondary); font-weight: 500; }
+.apd-divider::after { content: ""; flex: 1; height: 1px; background: var(--ln); }
+.apd-divider.is-center::before { content: ""; flex: 1; height: 1px; background: var(--ln); }
+.apd-divider.is-dashed::after, .apd-divider.is-dashed::before { background: linear-gradient(90deg, var(--ln) 0 var(--ln-dash), transparent var(--ln-dash)) 0 0 / calc(var(--ln-dash) + var(--ln-gap)) 100% repeat-x; }
+.apd-divider b { color: var(--text-primary); font-weight: 600; font-variant-numeric: tabular-nums; margin-right: .5em; }
+
+/* ---------- 10 · glass on a scene: a label tag and a UI fragment (at most three glass surfaces in view; dark glass only
+   over a photo, a scene with content under it or an Ember / ink-glow ground; light pages get the solid card; never on
+   glass or a plain canvas; DS 02-depth-and-parallax, BRIEF § 8.5) ---------- */
+.apd-tag, .apd-ui { background: var(--ln-glass-bg); box-shadow: inset 0 0 0 1px var(--ln-glass-edge), var(--ln-glass-shadow);
+  -webkit-backdrop-filter: blur(var(--ln-blur)); backdrop-filter: blur(var(--ln-blur)); color: var(--text-body); }
+/* .is-solid: the opaque card, for a dark page with nothing under the card (never glass on a plain canvas) */
+.apd-tag.is-solid, .apd-ui.is-solid { background: var(--ln-glass-solid); -webkit-backdrop-filter: none; backdrop-filter: none; }
+.apd-tag { display: inline-flex; align-items: center; gap: var(--ln-s12, 6px); padding: var(--ln-s8, 4px) var(--ln-s20, 10px); border-radius: 999px; font-size: var(--t-cap); line-height: var(--lh-cap); font-weight: 500; white-space: nowrap; color: var(--text-primary); }
+.apd-ui { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; column-gap: var(--ln-s16, 8px); row-gap: var(--ln-s16, 8px); padding: var(--ln-s16, 8px) var(--ln-s24, 12px) var(--ln-s16, 8px) var(--ln-s16, 8px); border-radius: 16px;
+  font-size: var(--t-label); line-height: var(--lh-label); text-align: left; white-space: normal; min-width: 12em; max-width: 22em; }
+.apd[data-format="slide"] .apd-ui { font-size: 22px; line-height: 30px; border-radius: 22px; }
+.apd-leader > .apd-ui, .apd-scene__layer > .apd-ui { width: max-content; }   /* absolutely placed: size to the content, not to the 0-wide anchor */
+.apd-ui__ic { width: 2.2em; height: 2.2em; border-radius: .6em; display: grid; place-items: center; background: color-mix(in srgb, var(--ln-ink, var(--text-primary)) 8%, transparent); box-shadow: inset 0 0 0 1px var(--ln-lo); color: var(--text-primary); }
+.apd-ui__ic .i { width: 1.15em; height: 1.15em; }
+.apd-ui__ic.is-hi { color: var(--ln-cold, var(--text-primary)); }   /* red icon on dark only (BRIEF § 11.1) */
+.apd-ui__ic.is-ok { color: var(--ln-ok); }
+.apd-ui b { display: block; color: var(--text-primary); font-weight: 600; }
+.apd-ui small { display: block; font-size: var(--t-cap); line-height: var(--lh-cap); color: var(--text-secondary); }
+.apd-ui__row { grid-column: 1 / -1; display: flex; gap: var(--ln-s8, 4px); flex-wrap: wrap; }
+.apd-ui__row .apd-chip { font-size: var(--t-cap); }
+.apd-ui__row .apd-chip.is-on { box-shadow: inset 0 0 0 1px var(--ln-ink, var(--text-primary)); color: var(--text-primary); }
+.apd-ui__foot { grid-column: 1 / -1; padding-top: var(--ln-s12, 6px); border-top: 1px solid var(--ln-lo); font-size: var(--t-cap); color: var(--text-secondary); }
+
+/* ---------- 11 · the moment: a big number that is the page's one loud thing ---------- */
+.apd-moment { display: inline-flex; align-items: baseline; font-size: var(--ln-moment, calc(var(--t-big) * 1.05)); line-height: .86; font-weight: 600; letter-spacing: -.05em; font-variant-numeric: tabular-nums; color: var(--text-primary); }
+.apd-moment small { font-size: .3em; line-height: 1; font-weight: 500; letter-spacing: 0; margin-left: .1em; }
+/* a reading while broken: coral on dark; ink on light pages (red type is for dark only, BRIEF § 11.1) */
+.apd-moment.is-cold { color: var(--ln-cold, var(--text-primary)); }
+.apd-moment.is-warm { color: var(--ln-ok); }
+
+/* ---------- 12 · the chapter: a scene, a time, one sentence, one line under it, a glass UI fragment at a point, the rail ----------
+   <section class="apd-page on-ink-glow apd-chapter"> <div class="apd-ground ink-glow is-flip">…</div> <div class="apd-chapter__stage"> <figure class="apd-scene is-bleed">…</figure>
+     <div class="apd-chapter__text"> [.apd-moment] <h2 class="apd-chapter__say"><time>06:12.</time> Something breaks.</h2>
+     <p class="apd-chapter__line">…</p></div></div> <div class="apd-rail" role="img" aria-label="…">…</div></section> */
+.apd-chapter { justify-content: center; }
+.apd-chapter__stage { position: relative; flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, var(--ln-cols, 1.6fr)) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); align-items: center; column-gap: var(--ln-s64, 32px); }
+.apd-chapter__stage > .apd-scene { align-self: center; justify-self: start; max-height: 100%; }
+/* crop into the drawing, as the website does: the scene is placed by --scene-x / --scene-y / --scene-w (px from the stage's corner,
+   negative to bleed off the page's left, top or bottom edge); the page clips it; the words keep the right column */
+.apd-chapter__stage > .apd-scene.is-bleed { position: absolute; left: var(--scene-x, 0px); top: var(--scene-y, 0px); width: var(--scene-w, 100%); max-height: none; }
+.apd-chapter__stage > .apd-scene.is-bleed ~ .apd-chapter__text, .apd-chapter__stage > .apd-orbit ~ .apd-chapter__text { grid-column: 2; }
+.apd-chapter__text { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: flex-start; gap: var(--ln-s24, 12px); padding-right: var(--ln-s48, 24px); }
+.apd-chapter__kicker { font-size: var(--t-label); line-height: var(--lh-label); font-weight: 600; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+.apd-chapter__say { font-size: calc(var(--t-title) * .72); line-height: 1.15; font-weight: 600; letter-spacing: -.025em; color: var(--text-primary); text-wrap: balance; max-width: 13em; }
+.apd-chapter__say time { font-variant-numeric: tabular-nums; }
+.apd-chapter__line { font-size: var(--t-dek); line-height: var(--lh-dek); color: var(--text-secondary); max-width: 20em; text-wrap: pretty; }
+.apd-chapter__moment { margin-bottom: var(--ln-s8, 4px); }
+
+/* ---------- 13 · the storyboard: small scenes in sequence, a hairline time line through ringed dots ----------
+   <ol class="apd-board" style="--board-frames: 4; --board-view: 420px"><li><div class="apd-board__view"><img …></div><time>06:12</time><p>Something breaks.</p></li>…</ol> */
+.apd-board { --board-frames: 4; --board-view: 360px; --board-row: calc(var(--gap) * .5); position: relative; list-style: none; margin: 0; padding: 0;
+  display: grid; grid-template-columns: repeat(var(--board-frames), minmax(0, 1fr)); column-gap: var(--gap); }
+.apd-board::before { content: ""; position: absolute; left: 0; right: 0; top: calc(var(--board-view) + var(--board-row) + var(--ln-ring) / 2); height: 1px; background: var(--ln-strong); }
+.apd-board > li { position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: var(--board-row); min-width: 0; }
+.apd-board > li::before { content: ""; order: 1; width: var(--ln-ring); height: var(--ln-ring); border-radius: 50%; flex: none; position: relative; z-index: 1;
+  box-shadow: inset 0 0 0 1px var(--ln-c, var(--ln-strong)), 0 0 0 calc(var(--ln-ring) * .3) var(--page);
+  background: radial-gradient(circle, var(--ln-d, var(--ln-ink, var(--text-primary))) 0 calc(var(--ln-dot) / 2 - .5px), transparent calc(var(--ln-dot) / 2 + .5px)), var(--page); }
+.apd-board > li.is-hi { --ln-c: var(--ln-hi); --ln-d: var(--ln-hi); }
+.apd-board__view { order: 0; position: relative; width: 100%; height: var(--board-view); display: flex; align-items: center; justify-content: center; padding: var(--ln-s24, 12px); box-sizing: border-box; }
+.apd-board__view > img { display: block; max-width: 100%; max-height: 100%; width: auto; height: auto; }
+.apd-board > li > time { order: 2; font-size: var(--t-h); line-height: var(--lh-h); font-weight: 600; letter-spacing: -.01em; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.apd-board > li > p { order: 3; font-size: var(--t-label); line-height: var(--lh-label); color: var(--text-secondary); max-width: 16em; }
+.apd-board > li > p b { color: var(--text-primary); font-weight: 600; }
+.apd-board > li.is-hi > time { color: var(--ln-cold, var(--text-primary)); }
+/* the measured value in each frame (a sample reading): coral while broken on dark, ink on light; moss when warm again */
+.apd-board__n { position: absolute; left: var(--ln-s24, 12px); top: var(--ln-s24, 12px); font-size: var(--t-h); line-height: 1; font-weight: 600; letter-spacing: -.03em; font-variant-numeric: tabular-nums; color: var(--text-primary); }
+.apd-board__n small { font-size: max(.5em, var(--t-cap)); font-weight: 500; letter-spacing: 0; margin-left: .1em; vertical-align: .55em; }
+.apd-board__n.is-cold { color: var(--ln-cold, var(--text-primary)); } .apd-board__n.is-warm { color: var(--ln-ok); }
+/* a frame may hold an .apd-scene instead of a bare img, so tags land on real points: keep --board-view ≈ frame width ÷ ratio + padding */
+.apd-board__view > .apd-scene { width: 100%; }
+/* board images follow the theme through the themed-image rules above */
+
+/* ---------- 14 · a scene in two layers with codes on a whole ring (the homepage's data lock, chapters.ts ch. 08) ----------
+   <figure class="apd-scene" style="--scene-ar: 782 / 524">
+     <img src="../kit/scenes/keysafe-ground-dark.svg" alt="">                       ground: the disc and the codes' ring
+     <div class="apd-scene__layer"> back chips (.is-back): they pass behind the object </div>
+     <img src="../kit/scenes/keysafe-locked-dark.svg" alt="…">                       the object
+     <div class="apd-scene__layer"> nodes on the ring and front chips </div></figure>
+   A chip hangs beside its node, outward (.at-l, .at-r, .at-t, .at-b), so the ring is never broken. Positions come from
+   the scene JSON's `orbit` list (node, back). */
+.apd-node { width: var(--ln-node, 8px); height: var(--ln-node, 8px); border-radius: 50%; transform: translate(-50%, -50%); background: var(--ln-node-c, var(--ln-strong)); box-shadow: 0 0 0 2px var(--ln-knock, var(--page)); }
+.apd[data-format="slide"] { --ln-node: 10px; }
+.apd-node.is-on { --ln-node-c: var(--ln-ok); }
+.apd-scene__layer > .apd-chip { transform: translate(-50%, -50%); }
+.apd-scene__layer > .apd-chip.at-r { transform: translate(var(--ln-s16, 8px), -50%); }
+.apd-scene__layer > .apd-chip.at-l { transform: translate(calc(-100% - var(--ln-s16, 8px)), -50%); }
+.apd-scene__layer > .apd-chip.at-b { transform: translate(-50%, var(--ln-s16, 8px)); }
+.apd-scene__layer > .apd-chip.at-t { transform: translate(-50%, calc(-100% - var(--ln-s16, 8px))); }
+.apd-scene__layer > .apd-chip.is-back { opacity: .72; }
+/* an orbit scene's stack, made explicit so the ring never crosses a chip and only the object covers the far ones:
+   ground img (disc and ring) 0 < far chips 1 < object img 2 < near chips 3 */
+.apd-scene.is-orbit > img { z-index: 0; }
+.apd-scene.is-orbit > img ~ .apd-scene__layer { z-index: 1; }
+.apd-scene.is-orbit > img ~ img { z-index: 2; }
+.apd-scene.is-orbit > img ~ img ~ .apd-scene__layer { z-index: 3; }
+/* the closing moment: a code back at its object (homepage ch. 08, the shackle coming down): it sits on the object's edge,
+   in front of it, with the moss ring of a locked code and the time from the log row it closes */
+.apd-chip.is-close { box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--ln-ok) 70%, transparent); color: var(--text-primary); }
+.apd-chip time { font-weight: 600; color: var(--ln-ok); font-variant-numeric: tabular-nums; }
+.apd-chip.is-on .i { color: var(--ln-ok); }
+
+/* ---------- 15 · the log: who saw what (a solid card beside the object, the homepage's .alog) ---------- */
+.apd-log { background: var(--ln-glass-solid); box-shadow: inset 0 0 0 1px var(--ln-glass-edge), var(--ln-glass-shadow); border-radius: 16px; padding: var(--ln-s20, 10px) var(--ln-s24, 12px); color: var(--text-body); font-size: var(--t-label); line-height: var(--lh-label); }
+.apd[data-format="slide"] .apd-log { border-radius: 22px; }
+.apd-log__h { display: flex; align-items: baseline; justify-content: space-between; gap: var(--ln-s12, 6px); padding-bottom: var(--ln-s12, 6px); }
+.apd-log__h b { color: var(--text-primary); font-weight: 600; }
+.apd-log__h span { font-size: var(--t-cap); color: var(--text-secondary); }
+.apd-log ol { list-style: none; margin: 0; padding: 0; }
+.apd-log li { display: grid; grid-template-columns: 4.2em minmax(0, 1fr); gap: var(--ln-s12, 6px); padding: var(--ln-s12, 6px) 0; border-top: 1px solid var(--ln-lo); }
+.apd-log time { font-size: var(--t-cap); font-weight: 600; color: var(--text-secondary); font-variant-numeric: tabular-nums; line-height: var(--lh-label); }
+.apd-log li b { display: block; color: var(--text-primary); font-weight: 600; }
+.apd-log li small { display: block; font-size: var(--t-cap); line-height: var(--lh-cap); color: var(--text-secondary); }
+.apd-log li.is-close time { color: var(--ln-ok); }   /* the row a closing chip (.apd-chip.is-close) carries */
+
+/* ---------- 16 · numbered callouts and their key (an annotated cutaway) ----------
+   Markers sit on projected points (--ln-x / --ln-y); the key lists the same numbers beside the drawing. */
+.apd-callout { width: var(--ln-call, 22px); height: var(--ln-call, 22px); border-radius: 50%; transform: translate(-50%, -50%); display: grid; place-items: center;
+  background: var(--page); box-shadow: inset 0 0 0 1px var(--ln-c, var(--ln-strong)), 0 0 0 2px var(--ln-knock, var(--page));
+  font-size: calc(var(--ln-call, 22px) * .52); line-height: 1; font-weight: 600; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.apd[data-format="slide"] { --ln-call: 40px; }
+.apd-callout.is-hi { --ln-c: var(--ln-hi); color: var(--ln-cold, var(--text-primary)); }
+.apd-key { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.apd-key li { display: grid; grid-template-columns: var(--ln-call, 22px) minmax(0, 1fr); gap: var(--ln-s16, 8px); align-items: start; padding: var(--ln-s12, 6px) 0; border-top: 1px solid var(--ln-lo); }
+.apd-key li:last-child { border-bottom: 1px solid var(--ln-lo); }
+.apd-key .n { width: var(--ln-call, 22px); height: var(--ln-call, 22px); border-radius: 50%; display: grid; place-items: center; box-shadow: inset 0 0 0 1px var(--ln-strong);
+  font-size: calc(var(--ln-call, 22px) * .52); font-weight: 600; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.apd-key li.is-hi .n { box-shadow: inset 0 0 0 1px var(--ln-hi); color: var(--ln-cold, var(--text-primary)); }
+.apd-key b { display: block; color: var(--text-primary); font-weight: 600; font-size: var(--t-label); line-height: var(--lh-label); }
+.apd-key small { display: block; color: var(--text-secondary); font-size: var(--t-cap); line-height: var(--lh-cap); }
+
+/* print: backdrop-filter does not reach the PDF, so glass prints as its opaque look-alike (dark: smoke #2a2925 →
+   night #171513, about what the blurred DS glass shows over ink; light: the same solid card as on screen). */
+@media print {
+  /* glass prints solid (a see-through fill let the drawing's lines cross the text in the PDF): dark = smoke #2a2925 →
+     night #171513, what the DS glass reads as over ink; light = the same solid card as on screen. A glass that imagery's
+     APImagery.bake bakes (a blurred copy of the scene under it; the page loads ../kit/ap-imagery.js) carries [data-baked]
+     and keeps the screen's translucent fill over that copy, so a coloured ground keeps its hue. It also keeps its
+     backdrop-filter (the PDF drops it, as with imagery's .apd-gl): bake() re-measures at beforeprint and skips glass whose
+     computed backdrop-filter has no blur, and a deck's other slides are display:none on screen, so print is its only measure. */
+  .apd-tag:not([data-baked]), .apd-ui:not([data-baked]) { -webkit-backdrop-filter: none; backdrop-filter: none; background: var(--ln-glass-print); }
+  .apd-tag.is-solid, .apd-ui.is-solid { -webkit-backdrop-filter: none; backdrop-filter: none; background: var(--ln-glass-solid); }
+  .apd-tag[data-baked]:not(.is-solid), .apd-ui[data-baked]:not(.is-solid) { background: var(--ln-glass-bg); }
+  /* over a line scene the copy does not hide the drawing yet (tested 1 Nov 2026): a plate-less scene's copy is transparent
+     (alpha 0–12/255 under a tag on fjord night), and Chromium's PDF blurs the copy inside its clip, so its edges fade
+     (alpha 57–254 under a card, 63–199 under a small tag) and the crisp lines cross the text. Solid there until bake
+     marks a scene copy that covers with data-baked="opaque". */
+  .apd-scene .apd-tag[data-baked]:not([data-baked="opaque"]):not(.is-solid),
+  .apd-scene .apd-ui[data-baked]:not([data-baked="opaque"]):not(.is-solid) { background: var(--ln-glass-print); }  /* the screen sheen over the baked copy: 4–9/255 of the screen (transparent printed 11–17 darker) */
+}
+
+/* Print: Preview prints blurred box-shadows as solid grey slabs (craft QA r5) — keep only the hairline edge. */
+@media print { .apd, .apd * { --ln-glass-shadow: 0 0 0 1px var(--ln-glass-edge) !important; } }
