@@ -28,7 +28,7 @@
       if(want() === mode) return;
       var vs = [].slice.call(document.querySelectorAll('video')), fe = document.fullscreenElement || document.webkitFullscreenElement;
       // the film in its own full screen turns by itself; the view changes once it is closed
-      if((fe && fe.tagName === 'VIDEO') || vs.some(function(v){ return v.webkitDisplayingFullscreen; })) return;
+      if((fe && (fe.tagName === 'VIDEO' || fe.classList.contains('fm'))) || vs.some(function(v){ return v.webkitDisplayingFullscreen; })) return;
       var id = doc.getAttribute('data-at'); if(id) try { history.replaceState(null, '', '#' + id); } catch(e){}
       // the film keeps its place: where it was, and whether it was playing
       var fv = document.querySelector('#film-step video');
@@ -49,24 +49,6 @@
     if(v.readyState >= 1) go(); else v.addEventListener('loadedmetadata', go, {once: true});
     return true;
   }
-  if(mode === 'read'){ read(); return; }
-  if(mode !== 'present') return;
-
-  // ---------- present: the presenter owns the screen; the kit's fit and toolbar step aside
-  doc.classList.add('present');
-  deck.dataset.fit = 'off'; deck.dataset.toolbar = 'off'; deck.classList.remove('is-deck');
-  var kitBar = document.querySelector('.apd-bar'); if(kitBar) kitBar.remove();
-  pages.forEach(function(p){ p.classList.remove('is-current'); });
-  var stage = deck;
-  var ui = document.querySelector('.ui'), top = null, countEl = ui && ui.querySelector('.count'), prevBtn = ui && ui.querySelector('.prev'), nextBtn = ui && ui.querySelector('.next');
-  var prog = document.querySelector('.prog'), progBar = prog && prog.firstElementChild;
-  var ov = document.getElementById('overview');
-  pages.forEach(function(p){ var bd = document.createElement('div'); bd.className = 'deck-bd'; bd.setAttribute('aria-hidden', 'true'); p.insertBefore(bd, p.firstChild); });
-  function ground(p){
-    var g = p.querySelector(':scope > .apd-ground') || p.querySelector(':scope > .deck-bd'), c = getComputedStyle(g || p).backgroundColor;
-    return (!c || c === 'rgba(0, 0, 0, 0)' || c === 'transparent') ? getComputedStyle(p).backgroundColor : c;
-  }
-
   // ---------- builds: [selector, start ms, fx, stagger ms, duration ms]; parts not listed are on the slide from the start
   var DUR = {fade:600, rise:700, pop:520, left:650, right:650, zoom:1200, wipe:950, count:900};
   var T = function(sel, at){ return [sel, at == null ? 80 : at, 'rise', 0, 800]; };
@@ -106,6 +88,24 @@
           ['.p-close-scene .h-ground', 200, 'fade', 0, 1000], ['.p-close-scene .h', 300, 'up', 55, 750], ['.p-pin', 1500, 'pop', 220, 550],
           ['.p-next', 1800, 'fade', 0, 700]]
   };
+  if(mode === 'read'){ read(); return; }
+  if(mode !== 'present') return;
+
+  // ---------- present: the presenter owns the screen; the kit's fit and toolbar step aside
+  doc.classList.add('present');
+  deck.dataset.fit = 'off'; deck.dataset.toolbar = 'off'; deck.classList.remove('is-deck');
+  var kitBar = document.querySelector('.apd-bar'); if(kitBar) kitBar.remove();
+  pages.forEach(function(p){ p.classList.remove('is-current'); });
+  var stage = deck;
+  var ui = document.querySelector('.ui'), top = null, countEl = ui && ui.querySelector('.count'), prevBtn = ui && ui.querySelector('.prev'), nextBtn = ui && ui.querySelector('.next');
+  var prog = document.querySelector('.prog'), progBar = prog && prog.firstElementChild;
+  var ov = document.getElementById('overview');
+  pages.forEach(function(p){ var bd = document.createElement('div'); bd.className = 'deck-bd'; bd.setAttribute('aria-hidden', 'true'); p.insertBefore(bd, p.firstChild); });
+  function ground(p){
+    var g = p.querySelector(':scope > .apd-ground') || p.querySelector(':scope > .deck-bd'), c = getComputedStyle(g || p).backgroundColor;
+    return (!c || c === 'rgba(0, 0, 0, 0)' || c === 'transparent') ? getComputedStyle(p).backgroundColor : c;
+  }
+
   function bigs(p){
     var big = [].filter.call(p.querySelectorAll('b, strong, span, div, p'), function(el){
       if(el.children.length > 1) return false;
@@ -397,9 +397,10 @@
   function begin(){ if(begun) return; begun = true; show(start, true); wake(); }
   if(document.fonts && document.fonts.ready) document.fonts.ready.then(begin, begin);
   setTimeout(begin, 1200);
-  // ---------- read: a phone held upright. The slides one under another, each reflowed by art/phone.css into one column
-  // 720 design px wide and scaled to the screen; nothing builds; the film plays in its own player (full screen turns it
-  // sideways); the slide on screen goes into the link, so turning the phone presents from there.
+  // ---------- read: a phone held upright. The slides one under another, each a card of its own, reflowed by
+  // art/phone.css into one column 720 design px wide and scaled to the screen. Each slide's parts come in as they are
+  // scrolled to; two buttons step to the slide above and below; the film has its own large player; the slide on screen
+  // goes into the link, so turning the phone presents from there.
   function read(){
     doc.classList.add('read');
     // a reload (turning the phone reloads) starts at the slide in the link, not at the browser's remembered scroll
@@ -409,12 +410,14 @@
     pages.forEach(function(p){ p.classList.remove('is-current'); });
     function size(){ doc.style.setProperty('--rz', (doc.clientWidth / 720).toFixed(4)); }
     addEventListener('resize', size); size();
+    var en = doc.getAttribute('data-lang') === 'en';
+    // the memory chart has a drawing of its own for this width (art/build.py keeps it in a <template>)
+    [].forEach.call(document.querySelectorAll('template.for-read'), function(t){ t.parentNode.insertBefore(t.content.cloneNode(true), t); });
     var fv = document.querySelector('#film-step video');
-    if(fv){ fv.setAttribute('controls', ''); fv.setAttribute('preload', 'metadata'); fv.removeAttribute('autoplay'); if(location.hash === '#film-step') resumeFilm(fv); }
+    if(fv){ fv.setAttribute('preload', 'metadata'); fv.removeAttribute('autoplay'); try { player(fv); } catch(e){ fv.setAttribute('controls', ''); } if(location.hash === '#film-step') resumeFilm(fv); }
     // appendix F reads one company a block: each cell says its column's name, in the page's language
     var cp = document.querySelector('table.cp');
     if(cp){
-      var en = doc.getAttribute('data-lang') === 'en';
       var heads = [].map.call(cp.querySelectorAll('thead th'), function(th){ var l = th.querySelector(en ? 'l-en' : 'l-nb'); return (l || th).textContent.trim(); });
       [].forEach.call(cp.querySelectorAll('tbody tr'), function(tr){
         [].forEach.call(tr.children, function(td, i){
@@ -424,6 +427,123 @@
         });
       });
     }
+
+    // the film: a player sized for a thumb. The poster stays until the first frame, with one large play button on it;
+    // under the picture a bar with play/pause, a wide seek line, the time and full screen (an iPhone opens its own
+    // full-screen player, which turns with the phone).
+    function player(v){
+      var fm = v.parentNode, step = fm.parentNode;
+      var ic = {play: '<path d="M8 5.2v13.6a1 1 0 0 0 1.5.9l11-6.8a1 1 0 0 0 0-1.8l-11-6.8A1 1 0 0 0 8 5.2z"/>',
+                pause: '<rect x="6" y="5" width="4.4" height="14" rx="1.4"/><rect x="13.6" y="5" width="4.4" height="14" rx="1.4"/>',
+                fs: '<path class="s" d="M4.5 9.5v-5h5M19.5 9.5v-5h-5M4.5 14.5v5h5M19.5 14.5v5h-5"/>'};
+      var svg = function(k){ return '<svg viewBox="0 0 24 24" aria-hidden="true" data-i="' + k + '">' + ic[k] + '</svg>'; };
+      var L = en ? {play: 'Play the film', pause: 'Pause the film', seek: 'Place in the film', fs: 'Full screen'}
+                 : {play: 'Spill av filmen', pause: 'Sett filmen på pause', seek: 'Sted i filmen', fs: 'Fullskjerm'};
+      var mk = function(tag, cls, html){ var e = document.createElement(tag); e.className = cls; if(tag === 'button') e.type = 'button'; if(html) e.innerHTML = html; return e; };
+      var big = mk('button', 'fp-big', svg('play')), bar = mk('div', 'fp-bar'), pp = mk('button', 'fp-pp', svg('play') + svg('pause')),
+          seek = mk('input', 'fp-seek'), time = mk('span', 'fp-time'), fs = mk('button', 'fp-fs', svg('fs')), wait = mk('span', 'fp-wait');
+      seek.type = 'range'; seek.min = 0; seek.max = 1000; seek.value = 0; seek.step = 1; seek.setAttribute('aria-label', L.seek);
+      big.setAttribute('aria-label', L.play); fs.setAttribute('aria-label', L.fs); wait.setAttribute('aria-hidden', 'true');
+      bar.appendChild(pp); bar.appendChild(seek); bar.appendChild(time); bar.appendChild(fs);
+      fm.appendChild(wait); fm.appendChild(big); fm.appendChild(bar);
+      if(v.poster) fm.style.setProperty('--poster', 'url("' + v.poster + '")');
+      // under the player, the film's own line from the close (its name and length), so the step says what it is
+      var line = document.querySelector('.cl-flink');
+      if(line){ var cap = mk('p', 'fp-cap'); cap.innerHTML = line.innerHTML; step.appendChild(cap); }
+      var mmss = function(t){ t = Math.max(0, Math.round(t || 0)); return Math.floor(t / 60) + ':' + two(t % 60); };
+      var dragging = false;
+      var set = function(k, on){ fm.classList.toggle(k, !!on); };
+      var paint = function(){
+        var d = v.duration || 0;
+        if(!dragging) seek.value = d ? Math.round(v.currentTime / d * 1000) : 0;
+        seek.style.setProperty('--p', (d ? v.currentTime / d * 100 : 0) + '%');
+        time.textContent = mmss(v.currentTime) + (d ? ' / ' + mmss(d) : '');
+        pp.setAttribute('aria-label', v.paused ? L.play : L.pause);
+      };
+      var wake = function(){};   // the bar sits under the picture, so it never has to step aside
+      var play = function(){ set('is-begun', true); set('is-wait', v.readyState < 3); var p = v.play(); if(p && p.catch) p.catch(function(){ set('is-wait', false); }); wake(); };
+      var toggle = function(){ if(v.paused) play(); else v.pause(); };
+      big.addEventListener('click', play);
+      pp.addEventListener('click', toggle);
+      v.addEventListener('click', function(){ if(!fm.classList.contains('is-begun')) play(); else toggle(); });
+      ['play', 'playing', 'pause', 'waiting', 'canplay', 'seeked', 'ended', 'timeupdate', 'loadedmetadata', 'durationchange'].forEach(function(n){
+        v.addEventListener(n, function(){
+          if(n === 'play'){ set('is-begun', true); set('is-on', true); wake(); }
+          if(n === 'playing' || n === 'canplay' || n === 'seeked') set('is-wait', false);
+          if(n === 'waiting') set('is-wait', !v.paused);
+          if(n === 'pause'){ set('is-on', false); wake(); }
+          if(n === 'ended'){ set('is-begun', false); set('is-on', false); try { v.currentTime = 0; } catch(e){} }
+          paint();
+        });
+      });
+      seek.addEventListener('input', function(){ dragging = true; var d = v.duration || 0; if(d){ try { v.currentTime = seek.value / 1000 * d; } catch(e){} } seek.style.setProperty('--p', seek.value / 10 + '%'); wake(); });
+      seek.addEventListener('change', function(){ dragging = false; wake(); });
+      fs.addEventListener('click', function(){
+        var out = document.fullscreenElement || document.webkitFullscreenElement;
+        try {
+          if(out){ (document.exitFullscreen || document.webkitExitFullscreen).call(document); }
+          else if(fm.requestFullscreen && document.fullscreenEnabled){
+            var r = fm.requestFullscreen({navigationUI: 'hide'});
+            if(r && r.then) r.then(function(){ try { screen.orientation.lock('landscape').catch(function(){}); } catch(e){} }, function(){});
+          }
+          else if(v.webkitEnterFullscreen){ if(v.readyState < 1) play(); v.webkitEnterFullscreen(); }
+        } catch(e){}
+        wake();
+      });
+      // leaving the film (scrolled well past it) pauses it
+      if('IntersectionObserver' in window) new IntersectionObserver(function(es){ es.forEach(function(e){ if(!e.isIntersecting && !v.paused && !(document.fullscreenElement || v.webkitDisplayingFullscreen)) v.pause(); }); }).observe(fm);
+      v.removeAttribute('controls'); fm.classList.add('fp'); paint();
+    }
+
+    // the two buttons: to the start of the slide above (first to the start of this one, when it is scrolled into) and of
+    // the slide below
+    var ui = document.querySelector('.ui'), upBtn = ui && ui.querySelector('.prev'), downBtn = ui && ui.querySelector('.next');
+    function here(){ var k = 0; pages.forEach(function(p, i){ if(p.getBoundingClientRect().top <= innerHeight * .3) k = i; }); return k; }
+    function goTo(i){ i = Math.max(0, Math.min(pages.length - 1, i)); pages[i].scrollIntoView({block: 'start', behavior: reduce ? 'auto' : 'smooth'}); }
+    function ends(){
+      if(!upBtn) return;
+      upBtn.disabled = scrollY < 8;
+      downBtn.disabled = pages[pages.length - 1].getBoundingClientRect().top < 24;
+    }
+    if(upBtn){
+      upBtn.addEventListener('click', function(){ var k = here(); goTo(pages[k].getBoundingClientRect().top < -40 ? k : k - 1); });
+      downBtn.addEventListener('click', function(){ var k = here(); goTo(pages[k].getBoundingClientRect().top > 40 ? k : k + 1); });
+      var tick = 0; addEventListener('scroll', function(){ if(tick) return; tick = requestAnimationFrame(function(){ tick = 0; ends(); }); }, {passive: true});
+      ends();
+    }
+
+    // each slide's parts come in as they are scrolled to: the same parts the presenter builds (PLAYS), each on its own
+    // when it reaches the screen. Bars grow along their length; everything else fades or rises a little. Once only.
+    function reveal(){
+      if(reduce || !('IntersectionObserver' in window)) return;
+      var FX = {left: 'rise', right: 'rise', up: 'rise', zoom: 'fade', wipe: 'fade', draw: 'fade', 'grow-up': 'grow', count: ''};
+      var io = new IntersectionObserver(function(es){
+        var k = 0;
+        es.forEach(function(e){
+          if(!e.isIntersecting) return;
+          io.unobserve(e.target);
+          (e.target._rv || []).forEach(function(el){
+            el.style.setProperty('--d', Math.min(k * (+el.getAttribute('data-st') || 60), 640) + 'ms'); k++;
+            el.classList.add('in');
+          });
+        });
+      }, {rootMargin: '0px 0px -6% 0px'});
+      pages.forEach(function(p){
+        var spec = (PLAYS[p.id] || HEAD).concat([['.s-head .apd-dek', 0, 'rise', 0], ['.apd-source', 0, 'fade', 0], ['.fp-cap', 0, 'fade', 0], ['.lcp-plot', 0, 'wipe-x', 0], ['.lcp-k, .lcp-tl', 0, 'fade', 60], ['.lcp-list li', 0, 'rise', 60]]);
+        spec.forEach(function(e){
+          var fx = e[2] in FX ? FX[e[2]] : e[2]; if(!fx || typeof e[0] !== 'string') return;
+          [].forEach.call(p.querySelectorAll(e[0]), function(el){
+            if(el.classList.contains('rv') || !el.getClientRects().length) return;   // not in this view
+            el.classList.add('rv'); el.setAttribute('data-fx', fx); el.setAttribute('data-st', Math.max(9, Math.min(e[3] || 60, 90)));
+            // a part of a drawing comes in with its drawing; a part that starts clipped away is watched by its parent
+            var svg = el.ownerSVGElement, host = el; while(svg){ host = svg; svg = svg.ownerSVGElement; }
+            if(fx === 'grow' || fx === 'wipe-x') host = host.parentNode;
+            (host._rv = host._rv || []).push(el); io.observe(host);
+          });
+        });
+      });
+    }
+
     // start at the slide in the link (after a turn: the slide that was on screen), then keep the link at the slide in view
     var target = location.hash ? document.getElementById(location.hash.slice(1)) : null;
     if(target) doc.setAttribute('data-at', target.id);
@@ -440,6 +560,7 @@
     var go = function(){
       if(begun) return; begun = true;
       if(target) target.scrollIntoView({block: 'start'});
+      try { reveal(); } catch(e){}
       requestAnimationFrame(function(){ requestAnimationFrame(watch); });
     };
     if(document.fonts && document.fonts.ready) document.fonts.ready.then(go, go);

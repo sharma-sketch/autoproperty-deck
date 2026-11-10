@@ -1,9 +1,11 @@
 /* Phones. Two views, chosen in art/present.js:
 
-   html.read        a phone held upright (or any window under 600 px wide). The slides one under another; each slide is
+   html.read        a phone held upright (or any window under 600 px wide). The slides one under another, each a card
+                    of its own with a gap between and a bar on top (the logo and the slide's number); each slide is
                     reflowed into one column on a canvas 720 design px wide, scaled to the screen (--rz = width / 720),
-                    so 30 design px of body text reads at 16 px on a 390 px phone. Nothing builds; every slide is at
-                    rest. The film is its own player, full width, and its full-screen button turns it sideways.
+                    so 30 design px of body text reads at 16 px on a 390 px phone. A slide's parts come in as they are
+                    scrolled to. Two buttons step to the slide above and below. The film is a player of its own with
+                    large controls.
    html.phone-land  a phone held sideways. Present mode with the slide as large as the screen allows (no margin), the
                     controls stepping aside after a moment, the film filling the slide.
 
@@ -12,30 +14,88 @@
 
 /* ---------- read: the canvas and its type */
 html.read, html.read body { overflow-x: hidden; }
-html.read body { margin: 0; background: #0f0e0d; }
+html.read body { margin: 0; background: #000; }
 html.read .apd[data-format="slide"] {
   --m: 40px; --gap: 36px;
   --t-cover: 96px; --lh-cover: 100px; --t-title: 50px; --lh-title: 58px; --t-h: 36px; --lh-h: 44px;
   --t-dek: 32px; --lh-dek: 44px; --t-body: 30px; --lh-body: 42px; --t-big: 120px;
   --t-label: 27px; --lh-label: 37px; --t-cap: 23px; --lh-cap: 31px;
-  display: block; padding: 0; gap: 0; }
+  display: flex; flex-direction: column; gap: 12px; padding: 10px 0 calc(92px + env(safe-area-inset-bottom, 0px)); }
+/* a slide is a card: rounded, a gap to the next, a hairline so a dark slide still shows its edge on the dark page */
 html.read .apd > .apd-page {
-  width: 720px; height: auto; min-height: 0; zoom: var(--rz, .5417); margin: 0; box-shadow: none; overflow: hidden;
-  padding: 72px var(--m) 44px; gap: var(--gap); }
+  width: 720px; height: auto; min-height: 0; zoom: var(--rz, .5417); margin: 0; overflow: hidden;
+  padding: 34px var(--m) 60px; gap: var(--gap); border-radius: 44px; scroll-margin-top: 18px;
+  box-shadow: inset 0 0 0 2px color-mix(in oklab, var(--text-primary) 13%, transparent); }
+html.read .apd > .apd-page > .apd-ground { border-radius: inherit; }
 html.read .apd-body, html.read .apd-fill { flex: none; }
 html.read .apd-title, html.read .s-head .apd-title { max-width: none; }
 html.read .s-head .apd-dek { max-width: none; }
-html.read .s-foot { margin-top: 8px; }
-html.read .s-foot .s-lockup { height: 20px; }
+/* the slide's bar: its foot (the logo and "4 of 25") stands on top, so every slide starts by saying which one it is */
+html.read .s-foot { order: -1; margin: 0 0 4px; padding-bottom: 26px; border-bottom: 2px solid color-mix(in oklab, var(--text-primary) 13%, transparent); z-index: 1; }
+html.read .s-foot .s-lockup { height: 22px; }
+html.read .s-foot .apd-num { font-weight: 600; }
 
-/* the controls: only the PDF stays, floating; there is nothing to step through */
-html.read .ui .prev, html.read .ui .next, html.read .ui .sep, html.read .ui .count, html.read .prog, html.read .ov { display: none !important; }
-html.read .ui { right: max(14px, env(safe-area-inset-right, 0px)); bottom: calc(14px + env(safe-area-inset-bottom, 0px)); }
+/* the controls, floating, sized for a thumb (44 px): to the slide above, to the slide below, the PDF */
+html.read .ui .count, html.read .prog, html.read .ov { display: none !important; }
+html.read .ui { right: max(12px, env(safe-area-inset-right, 0px)); bottom: calc(14px + env(safe-area-inset-bottom, 0px)); padding: 3px; gap: 0; font-size: 14px; }
+html.read .ui button.prev, html.read .ui button.next { display: inline-flex !important; }
+html.read .ui > span.sep { display: none !important; }
+html.read .ui > span.sep:last-of-type { display: block !important; height: 22px; }
+html.read .ui button, html.read .ui a { height: 44px; min-width: 44px; }
+html.read .ui .pdf { padding: 0 14px 0 10px; gap: 6px; }
+html.read .ui svg { width: 20px; height: 20px; }
+html.read .ui :is(.prev, .next) svg { rotate: 90deg; }   /* the arrows point up and down */
 
-/* the film step: a 16:9 player, full width, with its own controls (play, pause, full screen) */
-html.read #film-step { padding: 0; aspect-ratio: 16 / 9; height: auto; }
-html.read #film-step .fm { position: absolute; inset: 0; }
-html.read #film-step .fm-v { border-radius: 0; }
+/* a slide's parts come in as they are scrolled to (present.js, reveal()); bars grow along their length */
+html.read .rv { transition: opacity .6s cubic-bezier(.25, 1, .5, 1) var(--d, 0ms), translate .6s cubic-bezier(.25, 1, .5, 1) var(--d, 0ms),
+  scale .6s cubic-bezier(.25, 1, .5, 1) var(--d, 0ms), clip-path .9s cubic-bezier(.65, 0, .35, 1) var(--d, 0ms); }
+html.read .rv:not(.in)[data-fx=fade] { opacity: 0; }
+html.read .rv:not(.in)[data-fx=rise] { opacity: 0; translate: 0 30px; }
+html.read .rv:not(.in)[data-fx=pop] { opacity: 0; scale: .95; translate: 0 14px; }
+html.read .rv:not(.in)[data-fx=grow] { clip-path: inset(0 100% 0 0 round 10px); }
+html.read .rv.in[data-fx=grow] { clip-path: inset(-3px); }
+html.read .rv:not(.in)[data-fx=wipe-x] { clip-path: inset(-20px 100% -20px -20px); }
+html.read .rv.in[data-fx=wipe-x] { clip-path: inset(-20px); transition-duration: 1.6s; }
+@media print { html.read .rv { opacity: 1 !important; translate: none !important; scale: none !important; clip-path: none !important; } }
+
+/* the film step: a card that is plainly a film. The picture from edge to edge with one large play button on its
+   poster; under it a bar (play/pause, a wide seek line, the time, full screen: each 45 px on a phone) and the film's
+   line from the close. Sizes are design px (× 0.54). */
+html.read #film-step { padding: 0 0 40px; gap: 0; aspect-ratio: auto; height: auto; }
+html.read #film-step .fm { position: relative; inset: auto; display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto; place-items: stretch; background: #000; }
+html.read #film-step .fm-v { grid-area: 1 / 1; width: 100%; height: auto; aspect-ratio: 16 / 9; border-radius: 0; object-fit: contain; background: #000 var(--poster, none) center / cover no-repeat; }
+html.read .fp-big { all: unset; box-sizing: border-box; grid-area: 1 / 1; place-self: end center; margin-bottom: 26px; z-index: 1; width: 108px; height: 108px; border-radius: 50%; display: grid; place-items: center; cursor: pointer;
+  background: #fff; color: #141211; box-shadow: 0 0 0 10px rgba(255, 255, 255, .16), 0 20px 50px -14px rgba(0, 0, 0, .7); transition: opacity .25s, scale .2s cubic-bezier(.25, 1, .5, 1); }
+html.read .fp-big svg { width: 52px; height: 52px; fill: currentColor; translate: 3px 0; }
+html.read .fp-big:active { scale: .94; }
+html.read .fp-big:focus-visible { box-shadow: 0 0 0 6px #141211, 0 0 0 12px #fff; }
+html.read .fm.is-begun .fp-big { opacity: 0; pointer-events: none; }
+html.read .fp-wait { grid-area: 1 / 1; place-self: center; z-index: 1; width: 84px; height: 84px; border-radius: 50%; border: 7px solid rgba(255, 255, 255, .25); border-top-color: #fff; opacity: 0; pointer-events: none; }
+html.read .fm.is-wait.is-begun .fp-wait { opacity: 1; animation: fp-spin .9s linear infinite; }
+@keyframes fp-spin { to { rotate: 360deg; } }
+html.read .fp-bar { grid-area: 2 / 1; display: flex; align-items: center; gap: 8px; padding: 6px 22px; color: #fff; background: #000; }
+html.read .fp-bar button { all: unset; box-sizing: border-box; flex: none; width: 84px; height: 84px; border-radius: 50%; display: grid; place-items: center; cursor: pointer; }
+html.read .fp-bar button:active { background: rgba(255, 255, 255, .16); }
+html.read .fp-bar button:focus-visible { box-shadow: inset 0 0 0 4px #fff; }
+html.read .fp-bar svg { width: 44px; height: 44px; fill: currentColor; }
+html.read .fp-bar svg .s { fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+html.read .fp-pp [data-i=pause], html.read .fm.is-on .fp-pp [data-i=play] { display: none; }
+html.read .fm.is-on .fp-pp [data-i=pause] { display: block; }
+html.read .fp-time { flex: none; min-width: 148px; text-align: center; font: 600 24px/1 var(--font-sans); font-variant-numeric: tabular-nums; color: rgba(255, 255, 255, .86); }
+html.read .fp-seek { -webkit-appearance: none; appearance: none; flex: 1; min-width: 0; height: 84px; margin: 0 6px; padding: 0; background: transparent; cursor: pointer; touch-action: none; }
+html.read .fp-seek::-webkit-slider-runnable-track { height: 8px; border-radius: 4px; background: linear-gradient(90deg, #fff var(--p, 0%), rgba(255, 255, 255, .3) var(--p, 0%)); }
+html.read .fp-seek::-webkit-slider-thumb { -webkit-appearance: none; width: 36px; height: 36px; margin-top: -14px; border-radius: 50%; border: 0; background: #fff; box-shadow: 0 2px 10px rgba(0, 0, 0, .6); }
+html.read .fp-seek::-moz-range-track { height: 8px; border-radius: 4px; background: linear-gradient(90deg, #fff var(--p, 0%), rgba(255, 255, 255, .3) var(--p, 0%)); }
+html.read .fp-seek::-moz-range-thumb { width: 36px; height: 36px; border-radius: 50%; border: 0; background: #fff; }
+html.read .fp-seek:focus-visible { outline: 3px solid #fff; outline-offset: -6px; border-radius: 12px; }
+html.read #film-step .fp-cap { position: relative; z-index: 1; display: flex; align-items: center; gap: 14px; margin: 30px var(--m) 0; font-size: var(--t-label); line-height: var(--lh-label); font-weight: 600; color: var(--text-primary); }
+html.read .fp-cap svg { flex: none; width: 34px; height: 34px; fill: none; stroke: currentColor; stroke-width: 1.5; }
+html.read .fp-cap svg path { fill: currentColor; stroke: none; }
+/* in the full screen (Android): the picture as large as the screen, the bar under it at the same size as upright */
+html.read #film-step .fm:fullscreen { zoom: calc(.5417 / var(--rz, .5417)); grid-template-rows: minmax(0, 1fr) auto; }
+html.read #film-step .fm:fullscreen .fm-v { height: 100%; aspect-ratio: auto; }
+html.read #film-step .fm:fullscreen .fp-bar { padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px)); }
+@media (prefers-reduced-motion: reduce) { html.read .fp-big, html.read .ui { transition: none; } }
 
 /* ---------- a phone held sideways */
 html.phone-land #film-step .fm { inset: 0; }
@@ -84,9 +144,9 @@ html.read #solution .apd-body { display: contents; }
 html.read #solution :is(.s-head, .sl-left, .s-foot) { position: relative; z-index: 1; }   /* over the ground, as the body was */
 html.read #solution .s-head { order: 1; max-width: none; }
 html.read #solution .apd-title { font-size: 46px; line-height: 54px; }
-html.read #solution .lp-ring { order: 2; position: relative !important; left: auto; top: auto; transform: none; zoom: .8; margin: -40px 0 -10px -40px; flex: none; }
+html.read #solution .lp-ring { order: 2; position: relative !important; left: auto; top: auto; transform: none; zoom: .8; margin: -40px 0 -10px -50px; flex: none; }   /* centred on the page: its box is scaled 1.02 from its left edge */
 html.read #solution .sl-left, html.read #solution .sl-left.apd-fill { order: 3; width: auto; gap: 30px; }
-html.read #solution .s-foot { order: 4; }
+html.read #solution .s-foot { order: 0; }
 html.read #solution .apd-ground { --light-x: 50% !important; --light-y: 36% !important; --light-w: 30% !important; --light-h: 13% !important; }
 html.read .lp-lbl { top: 48px; font-size: 27px; line-height: 34px; }
 html.read .sl-ag b { font-size: 32px; line-height: 38px; }
@@ -133,13 +193,13 @@ html.read .tk-lbl:nth-of-type(odd) { justify-self: end; }
 html.read .tk-mem { margin-top: 26px; grid-template-columns: auto minmax(0, 1fr); }
 html.read .tk-mem::before { content: ""; position: absolute; left: calc(50% - 1.25px); bottom: 100%; height: 94px; border-left: 2.5px dashed var(--wire); }
 
-/* 7 · where we stand: the same two-by-two map with its axes, the cells taller than wide */
+/* 7 · where we stand: the same two-by-two map with its axes; the right column, which holds the long texts, is the
+   wider one (as on the slide), so its lines are not squeezed */
 html.read #position .apd-dek { font-size: 27px; line-height: 37px; }
-html.read .ps { grid-template-columns: 40px minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: auto auto 40px; gap: 12px; }
-html.read .ps-q { padding: 20px; border-radius: 20px; justify-content: flex-start; }
-html.read .ps-q .who { align-items: flex-start; gap: 10px; font-size: 26px; line-height: 32px; }
-html.read .ps-q .who .apd-icon { margin-top: 2px; }
-html.read .ps-q p { font-size: 24px; line-height: 32px; }
+html.read .ps { grid-template-columns: 40px minmax(0, .66fr) minmax(0, 1.34fr); grid-template-rows: auto auto 40px; gap: 12px; }
+html.read .ps-q { padding: 22px 20px; border-radius: 20px; justify-content: flex-start; gap: 12px; }
+html.read .ps-q .who { flex-direction: column; align-items: flex-start; gap: 10px; font-size: 26px; line-height: 32px; }
+html.read .ps-q p { font-size: 25px; line-height: 34px; }
 html.read .ps-us { grid-template-columns: minmax(0, 1fr); gap: 12px; }
 html.read .ps-ap { grid-template-columns: minmax(0, 1fr); padding: 20px; border-radius: 20px; }
 html.read .ps-ap .apd-lockup { height: 28px; }
@@ -167,10 +227,30 @@ html.read .wn > div:first-child { padding-top: 0; }
 html.read .wn > div + div { padding-left: 0; border-left: 0; border-top: 1px solid var(--line); }
 html.read .wn .v { font-size: 92px; }
 
-/* 10 · the memory: the curve keeps its size and scrolls sideways (it cannot be redrawn narrower and stay readable) */
-html.read .p-life { margin-inline: -40px; overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; }
-html.read .lc-plot, html.read .lc-tools, html.read .lc-row { left: 40px; }
-html.read .p-life::after { content: ""; position: absolute; left: 1736px; top: 0; width: 40px; height: 1px; }   /* the same margin at the far end */
+/* 10 · the memory: the chart drawn again for this width (art/build.py, moat(): the same curve and words, 640 wide), so
+   nothing scrolls sideways. The seven stages are marks under the axis; their names follow as a list, each with its
+   mark's icon as the key. */
+html.read .p-life { height: auto; }
+html.read .p-life > :is(.lc-plot, .lc-tools, .lc-row) { display: none; }
+html.read .p-life .lcp-k { margin: 0; font-size: var(--t-cap); line-height: var(--lh-cap); font-weight: 600; color: var(--text-secondary); }
+html.read .p-life .lcp-tl { display: flex; align-items: flex-start; gap: 16px; margin: 10px 0 0; font-size: var(--t-cap); line-height: var(--lh-cap); color: var(--text-secondary); }
+html.read .lcp-tl i { flex: none; width: 40px; height: 7px; margin-top: 12px; border-radius: 4px; background: color-mix(in oklab, var(--text-primary) 38%, transparent); }
+html.read .lcp-plot { display: block; width: 100%; height: auto; margin-top: 22px; overflow: visible; }
+html.read .lcp-plot stop { stop-color: var(--ground-light); }
+html.read .lcp-plot text { font-family: var(--font-sans); }
+html.read .lcp-plot .lc-us { font-size: 30px; }
+html.read .lcp-plot .lc-moat { font-size: 32px; }
+html.read .lcp-plot .lc-hub-t { font-size: 26px; }
+html.read .lcp-plot .lc-hub-s { font-size: 23px; }
+html.read .lcp-marks { position: relative; height: 52px; margin: 8px 0 0; padding: 0; list-style: none; }
+html.read .lcp-marks li { position: absolute; top: 0; translate: -50% 0; }
+html.read .lcp-marks .lc-node, html.read .lcp-list .lc-node { margin: 0; }
+html.read .lcp-list { margin: 30px 0 0; padding: 0; list-style: none; border-bottom: 1px solid var(--line); }
+html.read .lcp-list li { display: grid; grid-template-columns: 52px minmax(0, 1fr); column-gap: 20px; align-items: center; padding: 14px 0; border-top: 1px solid var(--line); }
+html.read .lcp-list .lc-node { grid-row: 1 / span 2; }
+html.read .lcp-list b { font-size: 27px; line-height: 33px; font-weight: 700; color: var(--text-primary); }
+html.read .lcp-list li > span:last-child { font-size: var(--t-cap); line-height: var(--lh-cap); color: var(--text-secondary); }
+html.read .lcp-list li.is-next b { color: var(--text-secondary); }
 
 /* 11 · customers: the rows, then the field of squares */
 html.read .cu { grid-template-columns: minmax(0, 1fr); row-gap: 30px; }
